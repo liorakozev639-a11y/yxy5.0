@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model MediaAsset {
+  id               String   @id @default(cuid())
+  userId           String
+  storagePath      String
+  originalName     String
+  mimeType         String
+  fileSize         Int
+  width            Int?
+  height           Int?
+  captureAt        DateTime?
+  captureSource    String?
+  processingStatus String   @default("READY")
+  createdAt        DateTime @default(now())
+
+  memory           Memory?
+  coverForCopies   LongTermCopy[] @relation("CopyCover")
+
+  @@index([userId, createdAt])
+}
+
+model Memory {
+  id           String    @id @default(cuid())
+  userId       String
+  mediaId      String    @unique
+  title        String    @default("")
+  note         String    @default("")
+  mood         String    @default("")
+  eventAt      DateTime
+  timezone     String    @default("Asia/Shanghai")
+  statuses     String[]
+  echoExcluded Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  media       MediaAsset            @relation(fields: [mediaId], references: [id])
+  topics      MemoryTopic[]
+  copyLinks   LongTermCopyMemory[]
+  echoes      MemoryEcho[]      @relation("EchoPrimaryMemory")
+  comparisonEchoes MemoryEcho[] @relation("EchoComparisonMemory")
+  reflections EchoReflection[]
+
+  @@index([userId, eventAt(sort: Desc)])
+  @@index([userId, deletedAt])
+}
+
+model Topic {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  color     String?
+  icon      String?
+  isNone    Boolean  @default(false)
+  suppressLongTermPrompt Boolean @default(false)
+  echoEnabled Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memories  MemoryTopic[]
+  copies    LongTermCopy[]
+  sourceEchoes MemoryEcho[] @relation("EchoSourceTopic")
+
+  @@unique([userId, name])
+  @@index([userId, createdAt])
+}
+
+model MemoryTopic {
+  memoryId String
+  topicId  String
+
+  memory Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  topic  Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([memoryId, topicId])
+  @@index([topicId, memoryId])
+}
+
+enum CopyLifecycleStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+model LongTermCopy {
+  id              String             @id @default(cuid())
+  userId          String
+  name            String
+  topicId         String
+  startDate       DateTime
+  coverMediaId    String?
+  lifecycleStatus CopyLifecycleStatus @default(ACTIVE)
+  autoCollectEnabled Boolean          @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  completedAt     DateTime?
+  archivedAt      DateTime?
+
+  topic       Topic                @relation(fields: [topicId], references: [id])
+  coverMedia  MediaAsset?          @relation("CopyCover", fields: [coverMediaId], references: [id])
+  memoryLinks LongTermCopyMemory[]
+  echoes      MemoryEcho[]
+
+  @@index([userId, lifecycleStatus, startDate])
+  @@index([topicId, lifecycleStatus])
+  @@unique([userId, topicId])
+}
+
+model LongTermCopyMemory {
+  copyId   String
+  memoryId String
+  linkedAt DateTime @default(now())
+
+  copy   LongTermCopy @relation(fields: [copyId], references: [id], onDelete: Cascade)
+  memory Memory       @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+
+  @@id([copyId, memoryId])
+  @@index([copyId, linkedAt])
+}
+
+enum EchoType {
+  ON_THIS_DAY
+  COPY_ANNIVERSARY
+  COPY_MILESTONE
+  COPY_FIRST
+  PAST_AND_NOW
+  TOPIC_MEMORY
+}
+
+enum EchoStatus {
+  ACTIVE
+  DISMISSED
+}
+
+model MemoryEcho {
+  id             String       @id @default(cuid())
+  userId         String
+  memoryId       String
+  comparisonMemoryId String?
+  longTermCopyId String?
+  sourceTopicId String?
+  echoDate       DateTime     @db.Date
+  echoType       EchoType
+  reason         String
+  score          Int
+  displayOrder   Int
+  status         EchoStatus   @default(ACTIVE)
+  viewedAt       DateTime?
+  createdAt      DateTime     @default(now())
+
+  memory          Memory          @relation("EchoPrimaryMemory", fields: [memoryId], references: [id], onDelete: Restrict)
+  comparisonMemory Memory?        @relation("EchoComparisonMemory", fields: [comparisonMemoryId], references: [id], onDelete: SetNull)
+  longTermCopy    LongTermCopy?   @relation(fields: [longTermCopyId], references: [id], onDelete: SetNull)
+  sourceTopic     Topic?           @relation("EchoSourceTopic", fields: [sourceTopicId], references: [id], onDelete: SetNull)
+  reflection      EchoReflection?
+
+  @@unique([userId, echoDate, memoryId])
+  @@unique([userId, echoDate, displayOrder])
+  @@index([userId, echoDate(sort: Desc)])
+  @@index([memoryId, createdAt])
+  @@index([comparisonMemoryId])
+  @@index([sourceTopicId])
+}
+
+model EchoGeneration {
+  userId    String
+  echoDate  DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  @@id([userId, echoDate])
+  @@index([echoDate])
+}
+
+model EchoReflection {
+  id             String      @id @default(cuid())
+  userId         String
+  memoryId       String
+  memoryEchoId   String?     @unique
+  sourceEchoDate DateTime    @db.Date
+  text           String      @db.Text
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  memory     Memory      @relation(fields: [memoryId], references: [id], onDelete: Restrict)
+  memoryEcho MemoryEcho? @relation(fields: [memoryEchoId], references: [id], onDelete: SetNull)
+
+  @@index([userId, memoryId, sourceEchoDate(sort: Desc)])
+}
+
+model EchoPreference {
+  userId        String   @id
+  enabled       Boolean  @default(true)
+  excludedMoods String[] @default([])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

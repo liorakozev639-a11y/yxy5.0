@@ -1,0 +1,12 @@
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { describe, expect, it } from 'vitest';
+import { HomeView } from './HomeView';
+
+describe('HomeView', () => {
+  it('shows the memory echo entry above the memory toolbar', () => {
+    const html = renderToStaticMarkup(<HomeView echoCard={<aside>来自三年前的问候</aside>} imageUrls={{}} memories={[]} onAdd={() => undefined} onQueryChange={() => undefined} onSelect={() => undefined} query="" />);
+    expect(html).toContain('来自三年前的问候');
+    expect(html.indexOf('来自三年前的问候')).toBeLessThan(html.indexOf('所有记忆'));
+  });
+});

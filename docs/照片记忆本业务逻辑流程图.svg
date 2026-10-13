@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1200" viewBox="0 0 1800 1200">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="7" stdDeviation="10" flood-color="#304b46" flood-opacity="0.10"/></filter>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,8 L9,4 z" fill="#70827c"/></marker>
+    <style>
+      .title{font:700 46px 'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:#243834}
+      .subtitle{font:400 18px 'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:#7d8b86}
+      .lane-title{font:700 24px 'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:#314a45}
+      .node-title{font:700 19px 'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:#334b46}
+      .node-copy{font:400 14px 'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:#71807b}
+      .edge{fill:none;stroke:#70827c;stroke-width:3;marker-end:url(#arrow)}
+      .dash{stroke-dasharray:8 8}
+      .label{font:600 13px 'Microsoft YaHei','Noto Sans CJK SC',sans-serif;fill:#54746d}
+      .card{fill:#fffdfa;stroke:#d9dfda;stroke-width:2;rx:18;filter:url(#shadow)}
+      .decision{fill:#fff7df;stroke:#d8b65d;stroke-width:2;filter:url(#shadow)}
+    </style>
+  </defs>
+  <rect width="1800" height="1200" fill="#f6f2eb"/>
+  <text class="title" x="90" y="78">照片记忆本完整业务逻辑</text>
+  <text class="subtitle" x="90" y="112">从照片记录到情感回看，再到本地数据保护的完整闭环</text>
+
+  <rect x="70" y="155" width="1660" height="295" rx="30" fill="#eaf7f3" stroke="#99c9c0" stroke-width="2"/>
+  <text class="lane-title" x="100" y="202">记录与主题</text>
+  <rect class="card" x="110" y="245" width="180" height="100"/><text class="node-title" x="200" y="282" text-anchor="middle">选择照片</text><text class="node-copy" x="200" y="310" text-anchor="middle">单张或批量导入</text>
+  <path class="decision" d="M395 242 L485 295 L395 348 L305 295 Z"/><text class="node-title" x="395" y="290" text-anchor="middle">多张照片</text><text class="node-copy" x="395" y="314" text-anchor="middle">是否统一主题</text>
+  <rect class="card" x="500" y="230" width="260" height="130"/><text class="node-title" x="630" y="270" text-anchor="middle">补充记忆信息</text><text class="node-copy" x="630" y="299" text-anchor="middle">标题 备忘录 心情 状态</text><text class="node-copy" x="630" y="326" text-anchor="middle">批量导入可仅保留时间</text>
+  <rect class="card" x="805" y="245" width="230" height="100"/><text class="node-title" x="920" y="282" text-anchor="middle">选择或创建主题</text><text class="node-copy" x="920" y="310" text-anchor="middle">无 恋爱 考研 读研等</text>
+  <path class="decision" d="M1150 242 L1245 295 L1150 348 L1055 295 Z"/><text class="node-title" x="1150" y="290" text-anchor="middle">关联副本</text><text class="node-copy" x="1150" y="314" text-anchor="middle">征得用户确认</text>
+  <rect class="card" x="1270" y="230" width="240" height="130"/><text class="node-title" x="1390" y="270" text-anchor="middle">保存记忆</text><text class="node-copy" x="1390" y="299" text-anchor="middle">同主题可自动收集</text><text class="node-copy" x="1390" y="326" text-anchor="middle">图片与数据写入本机</text>
+  <rect x="1550" y="250" width="140" height="90" rx="45" fill="#cfe9df" stroke="#70a990" stroke-width="2"/><text class="node-title" x="1620" y="285" text-anchor="middle">本地存储</text><text class="node-copy" x="1620" y="313" text-anchor="middle">PostgreSQL</text>
+  <path class="edge" d="M290 295 H305"/><path class="edge" d="M485 295 H500"/><path class="edge" d="M760 295 H805"/><path class="edge" d="M1035 295 H1055"/><path class="edge" d="M1245 295 H1270"/><path class="edge" d="M1510 295 H1550"/>
+  <text class="label" x="469" y="274">单张或统一</text><text class="label" x="1240" y="274">同意或暂不</text>
+
+  <rect x="70" y="480" width="1060" height="640" rx="30" fill="#fff9e9" stroke="#dfc77e" stroke-width="2"/>
+  <text class="lane-title" x="100" y="528">回看与情感反馈</text>
+  <rect class="card" x="115" y="575" width="260" height="110"/><text class="node-title" x="245" y="615" text-anchor="middle">首页与时间线</text><text class="node-copy" x="245" y="645" text-anchor="middle">搜索 浏览 编辑 删除</text>
+  <rect class="card" x="430" y="565" width="250" height="130"/><text class="node-title" x="555" y="605" text-anchor="middle">长期副本时间线</text><text class="node-copy" x="555" y="634" text-anchor="middle">按主题持续积累</text><text class="node-copy" x="555" y="661" text-anchor="middle">支持暂停与自动收集</text>
+  <rect class="card" x="735" y="575" width="250" height="110"/><text class="node-title" x="860" y="615" text-anchor="middle">重要日子</text><text class="node-copy" x="860" y="645" text-anchor="middle">关联已有照片记忆</text>
+  <rect class="card" x="220" y="790" width="280" height="135"/><text class="node-title" x="360" y="830" text-anchor="middle">记忆回声</text><text class="node-copy" x="360" y="859" text-anchor="middle">当天首次打开生成</text><text class="node-copy" x="360" y="886" text-anchor="middle">最多三条 保留三十天</text>
+  <rect class="card" x="575" y="805" width="230" height="105"/><text class="node-title" x="690" y="845" text-anchor="middle">回声感言</text><text class="node-copy" x="690" y="875" text-anchor="middle">主动保存新的体会</text>
+  <rect class="card" x="875" y="790" width="220" height="135"/><text class="node-title" x="985" y="830" text-anchor="middle">记忆总结</text><text class="node-copy" x="985" y="859" text-anchor="middle">月度与年度切换</text><text class="node-copy" x="985" y="886" text-anchor="middle">排行 代表记忆 副本进展</text>
+  <path class="edge" d="M375 630 H430"/><path class="edge" d="M680 630 H735"/>
+  <path class="edge dash" d="M245 685 V735 Q245 755 265 765 L330 790"/><path class="edge" d="M500 857 H575"/><path class="edge dash" d="M375 650 Q700 720 930 790"/>
+  <text class="label" x="190" y="750">当天首次打开</text><text class="label" x="663" y="750">选择周期</text>
+
+  <rect x="1160" y="480" width="570" height="640" rx="30" fill="#edf6ff" stroke="#8cbbe0" stroke-width="2"/>
+  <text class="lane-title" x="1190" y="528">数据安全</text>
+  <rect class="card" x="1230" y="575" width="220" height="110"/><text class="node-title" x="1340" y="615" text-anchor="middle">数据保险箱</text><text class="node-copy" x="1340" y="645" text-anchor="middle">显示数据库与存储位置</text>
+  <path class="decision" d="M1570 575 L1670 630 L1570 685 L1470 630 Z"/><text class="node-title" x="1570" y="625" text-anchor="middle">应用锁开启</text><text class="node-copy" x="1570" y="650" text-anchor="middle">敏感操作验证</text>
+  <rect class="card" x="1215" y="785" width="210" height="120"/><text class="node-title" x="1320" y="825" text-anchor="middle">一键导出</text><text class="node-copy" x="1320" y="855" text-anchor="middle">JSON ZIP PDF</text><text class="node-copy" x="1320" y="880" text-anchor="middle">图片与文字</text>
+  <rect class="card" x="1455" y="785" width="210" height="120"/><text class="node-title" x="1560" y="825" text-anchor="middle">数据库备份</text><text class="node-copy" x="1560" y="855" text-anchor="middle">pg dump 与校验值</text><text class="node-copy" x="1560" y="880" text-anchor="middle">状态可追踪</text>
+  <rect class="card" x="1335" y="955" width="210" height="120"/><text class="node-title" x="1440" y="995" text-anchor="middle">导入恢复</text><text class="node-copy" x="1440" y="1025" text-anchor="middle">先预检后确认</text><text class="node-copy" x="1440" y="1050" text-anchor="middle">安全合并不覆盖</text>
+  <path class="edge" d="M1450 630 H1470"/><path class="edge" d="M1570 685 V745 Q1570 760 1555 770 L1510 785"/><path class="edge" d="M1515 685 Q1420 730 1360 785"/><path class="edge" d="M1560 905 Q1545 940 1500 955"/><path class="edge" d="M1320 905 Q1340 940 1380 955"/>
+  <path class="edge" d="M985 925 V1010 Q985 1030 1005 1030 H1160"/>
+  <text class="label" x="1060" y="1016">进入保险箱</text>
+
+  <text class="subtitle" x="90" y="1170">原则 先有照片后补文字  用户决定主题与长期副本  统计与回声仅使用本机已有数据</text>
+</svg>

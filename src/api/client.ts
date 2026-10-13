@@ -12,11 +12,14 @@ export class ApiClient {
     const headers = new Headers(init.headers);
     if (init.body && !(init.body instanceof FormData) && !headers.has('content-type')) headers.set('content-type', 'application/json');
     try {
-      const response = await fetch(path, { ...init, headers, signal: controller.signal });
+      const response = await fetch(path, { ...init, credentials: 'include', headers, signal: controller.signal });
       const text = await response.text();
       let body: unknown = undefined;
       try { body = text ? JSON.parse(text) : undefined; } catch { body = text; }
       if (!response.ok) {
+        if (response.status === 401 && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('photo-memory-lock-required'));
+        }
         const message = typeof body === 'object' && body && 'message' in body ? String((body as { message: unknown }).message) : `请求失败（${response.status}）`;
         throw new ApiError(response.status, message);
       }

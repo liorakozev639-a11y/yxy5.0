@@ -7,6 +7,7 @@ import { PrismaService } from '../src/prisma/prisma.service.js';
 
 async function createApp() {
   const fakePrisma = {
+    appLockSetting: { findUnique: vi.fn(async () => null) },
     echoPreference: { findUnique: vi.fn(async () => ({ userId: 'local-user', enabled: false, excludedMoods: [] })) },
     $connect: vi.fn(),
     $disconnect: vi.fn(),

@@ -7,6 +7,7 @@ import { PrismaService } from '../src/prisma/prisma.service.js';
 describe('memories API', () => {
   it('returns an empty memory page for the local user', async () => {
     const fakePrisma = {
+      appLockSetting: { findUnique: vi.fn(async () => null) },
       memory: { findMany: vi.fn(async () => []) },
       $connect: vi.fn(),
       $disconnect: vi.fn(),

@@ -28,8 +28,16 @@ import { MemoryEchoCard } from './components/MemoryEchoCard';
 import { EchoDisabledCard, MemoryEchoPage, nextEchoIndex } from './components/MemoryEchoPage';
 import { EchoReflectionEditor } from './components/EchoReflectionEditor';
 import { EchoSettingsPanel } from './components/EchoSettingsPanel';
+import type { MemorySummary, SummaryPeriod } from './domain/memory-summary';
+import { ApiSummaryRepository } from './repositories/api-summary-repository';
+import { MemorySummaryPage } from './components/MemorySummaryPage';
+import type { AppLockStatus } from './domain/data-vault';
+import { ApiAppLockRepository } from './repositories/api-app-lock-repository';
+import { ApiVaultRepository } from './repositories/api-vault-repository';
+import { AppLockGate } from './components/AppLockGate';
+import { DataVaultPage } from './components/DataVaultPage';
 
-type View = 'home' | 'timeline' | 'important' | 'copies' | 'echo';
+type View = 'home' | 'timeline' | 'important' | 'copies' | 'echo' | 'summary' | 'vault';
 type PolicyRequest = { candidates: CopyDecisionCandidate[]; resolve: (decisions: CopyDecisionMap) => void; reject: (error: Error) => void };
 
 export const APP_NAV_ITEMS = [
@@ -55,6 +63,9 @@ export default function App() {
   const topicRepository = useMemo(() => new ApiTopicRepository(apiClient), [apiClient]);
   const copyRepository = useMemo(() => new ApiLongTermCopyRepository(apiClient), [apiClient]);
   const echoRepository = useMemo(() => new ApiMemoryEchoRepository(apiClient), [apiClient]);
+  const summaryRepository = useMemo(() => new ApiSummaryRepository(apiClient), [apiClient]);
+  const appLockRepository = useMemo(() => new ApiAppLockRepository(apiClient), [apiClient]);
+  const vaultRepository = useMemo(() => new ApiVaultRepository(apiClient), [apiClient]);
   const importantRepository = useMemo(() => createImportantDayRepository(), []);
   const [state, dispatch] = useReducer(appReducer, initialState);
   const [view, setView] = useState<View>('home');
@@ -79,20 +90,40 @@ export default function App() {
   const [reflectionEcho, setReflectionEcho] = useState<MemoryEcho>();
   const [echoSettingsOpen, setEchoSettingsOpen] = useState(false);
   const [selectedReflections, setSelectedReflections] = useState<EchoReflection[]>([]);
+  const [summaryPeriod, setSummaryPeriod] = useState<SummaryPeriod>('month');
+  const [summaryDate, setSummaryDate] = useState(() => new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10));
+  const [memorySummary, setMemorySummary] = useState<MemorySummary>();
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState('');
+  const [lockStatus, setLockStatus] = useState<AppLockStatus>();
+  const [lockSkipped, setLockSkipped] = useState(false);
+  const accessReady = !!lockStatus && (lockSkipped || !lockStatus.configured || !lockStatus.enabled || !lockStatus.locked);
 
   useEffect(() => {
+    let active = true;
+    appLockRepository.status().then((status) => { if (active) setLockStatus(status); }).catch(() => {
+      if (active) setLockStatus({ configured: false, enabled: false, locked: false, autoLockMinutes: 30 });
+    });
+    const refreshLock = () => { void appLockRepository.status().then(setLockStatus).catch(() => undefined); };
+    window.addEventListener('photo-memory-lock-required', refreshLock);
+    return () => { active = false; window.removeEventListener('photo-memory-lock-required', refreshLock); };
+  }, [appLockRepository]);
+
+  useEffect(() => {
+    if (!accessReady) return;
     void repository.getAll().then((memories) => dispatch({ type: 'loaded', memories })).catch(async () => {
       const local = await localRepository.getAll().catch(() => []);
       dispatch({ type: 'loaded', memories: local });
       setToast('后端暂未连接，当前显示浏览器中的本地草稿。');
     });
-  }, [localRepository, repository]);
-  useEffect(() => { void topicRepository.list().then(setTopics).catch(() => undefined); }, [topicRepository]);
-  useEffect(() => { void copyRepository.list().then(setLongTermCopies).catch(() => undefined); }, [copyRepository]);
-  useEffect(() => { void loadTodayEchoes(); }, [echoRepository]);
+  }, [accessReady, localRepository, repository]);
+  useEffect(() => { if (accessReady) void topicRepository.list().then(setTopics).catch(() => undefined); }, [accessReady, topicRepository]);
+  useEffect(() => { if (accessReady) void copyRepository.list().then(setLongTermCopies).catch(() => undefined); }, [accessReady, copyRepository]);
+  useEffect(() => { if (accessReady) void loadTodayEchoes(); }, [accessReady, echoRepository]);
   useEffect(() => {
+    if (!accessReady) return;
     void importantRepository.getAll().then(setImportantDays).catch(() => setToast('重要日子读取失败，请刷新重试。'));
-  }, [importantRepository]);
+  }, [accessReady, importantRepository]);
 
   useEffect(() => {
     const next: Record<string, string> = {};
@@ -141,6 +172,17 @@ export default function App() {
   async function openEchoPage() {
     setView('echo');
     try { setEchoHistory(await echoRepository.list(30)); } catch { setEchoError('最近的回声读取失败，请稍后重试。'); }
+  }
+
+  async function openSummary(period: SummaryPeriod = summaryPeriod, date = summaryDate) {
+    setView('summary');
+    setSummaryPeriod(period);
+    setSummaryDate(date);
+    setSummaryLoading(true);
+    setSummaryError('');
+    try { setMemorySummary(await summaryRepository.get(period, date)); }
+    catch { setMemorySummary(undefined); setSummaryError('记忆总结暂时无法生成，请确认后端已连接。'); }
+    finally { setSummaryLoading(false); }
   }
 
   async function saveReflection(text: string) {
@@ -308,18 +350,24 @@ export default function App() {
     }
   }
 
+  if (!lockStatus) return <div className="app-loading"><div className="loading-orb">✦</div><p>正在检查本机保护状态…</p></div>;
+  if (!lockSkipped && (!lockStatus.configured || (lockStatus.enabled && lockStatus.locked))) {
+    return <AppLockGate onSkip={() => setLockSkipped(true)} onStatusChange={(status) => { setLockStatus(status); setLockSkipped(false); }} repository={appLockRepository} status={lockStatus}><div /></AppLockGate>;
+  }
   if (state.loading) return <div className="app-loading"><div className="loading-orb">✦</div><p>正在打开你的记忆本…</p></div>;
 
   return (
     <div className="app-shell">
-      <header className="topbar"><button className="brand" onClick={() => { setView('home'); setQuery(''); }} type="button"><span className="brand-mark">✦</span><span>照片记忆本<small>PHOTO MEMORY</small></span></button><div className="topbar-note">安全保存到你的本地数据库</div><button className="mobile-add" onClick={() => setEditor('new')} type="button">＋</button></header>
+      <header className="topbar"><button className="brand" onClick={() => { setView('home'); setQuery(''); }} type="button"><span className="brand-mark">✦</span><span>照片记忆本<small>PHOTO MEMORY</small></span></button><div className="topbar-tools"><div className="topbar-note">安全保存到你的本地数据库</div><button className="vault-entry" onClick={() => setView('vault')} type="button"><span>◇</span> 数据保险箱</button></div><button className="mobile-add" onClick={() => setEditor('new')} type="button">＋</button></header>
       <main className="main-content">
         {state.error && <div className="error-banner">{state.error}</div>}
-        {view === 'home' && <HomeView echoCard={<section className="home-echo-section">{!echoPreference.enabled ? <EchoDisabledCard onOpenHistory={() => void openEchoPage()} onOpenSettings={() => setEchoSettingsOpen(true)} /> : echoLoading ? <div className="home-echo-status">正在听取今天的记忆回声…</div> : echoError ? <div className="home-echo-status is-error"><p>{echoError}</p><button className="text-button" onClick={() => void loadTodayEchoes()} type="button">重试</button></div> : currentEcho ? <MemoryEchoCard echo={currentEcho} index={echoIndex} onDismiss={(echo) => void dismissCurrentEcho(echo)} onExclude={(memory) => void excludeEchoMemory(memory)} onNext={() => setEchoIndex(nextEchoIndex(echoIndex, todayEchoes))} onOpen={(id) => dispatch({ type: 'selected', id })} onOpenAll={() => void openEchoPage()} onReflect={setReflectionEcho} onDisableTopic={(topic) => void disableEchoTopic(topic)} sectionLabel="记忆回声" total={todayEchoes.filter((echo) => echo.status === 'ACTIVE').length} /> : <div className="home-echo-status"><strong>过去的记忆还在慢慢积累</strong><p>保存满 30 天后，它们会在合适的时候回来。</p><button className="text-button" onClick={() => void openEchoPage()} type="button">查看回声记录</button></div>}</section>} imageUrls={imageUrls} memories={state.memories} onAdd={() => setEditor('new')} onQueryChange={setQuery} onSelect={(id) => dispatch({ type: 'selected', id })} query={query} />}
+        {view === 'home' && <HomeView echoCard={<section className="home-echo-section">{!echoPreference.enabled ? <EchoDisabledCard onOpenHistory={() => void openEchoPage()} onOpenSettings={() => setEchoSettingsOpen(true)} /> : echoLoading ? <div className="home-echo-status">正在听取今天的记忆回声…</div> : echoError ? <div className="home-echo-status is-error"><p>{echoError}</p><button className="text-button" onClick={() => void loadTodayEchoes()} type="button">重试</button></div> : currentEcho ? <MemoryEchoCard echo={currentEcho} index={echoIndex} onDismiss={(echo) => void dismissCurrentEcho(echo)} onExclude={(memory) => void excludeEchoMemory(memory)} onNext={() => setEchoIndex(nextEchoIndex(echoIndex, todayEchoes))} onOpen={(id) => dispatch({ type: 'selected', id })} onOpenAll={() => void openEchoPage()} onReflect={setReflectionEcho} onDisableTopic={(topic) => void disableEchoTopic(topic)} sectionLabel="记忆回声" total={todayEchoes.filter((echo) => echo.status === 'ACTIVE').length} /> : <div className="home-echo-status"><strong>过去的记忆还在慢慢积累</strong><p>保存满 30 天后，它们会在合适的时候回来。</p><button className="text-button" onClick={() => void openEchoPage()} type="button">查看回声记录</button></div>}</section>} summaryCard={<section className="home-summary-card"><div><span className="section-kicker">MEMORY REVIEW</span><h2>这一段时间，留下了什么？</h2><p>从真实照片、心情、主题与长期副本中生成月度或年度回顾。</p></div><div><button className="secondary-button" onClick={() => void openSummary('month')} type="button">查看月度总结</button><button className="text-button" onClick={() => void openSummary('year')} type="button">年度总结</button></div></section>} imageUrls={imageUrls} memories={state.memories} onAdd={() => setEditor('new')} onQueryChange={setQuery} onSelect={(id) => dispatch({ type: 'selected', id })} query={query} />}
         {view === 'timeline' && <Timeline memories={state.memories} imageUrls={imageUrls} onSelect={(id) => dispatch({ type: 'selected', id })} />}
         {view === 'important' && <ImportantDaysView days={importantDays} imageUrls={imageUrls} memories={state.memories} onCreate={createImportantDay} onDelete={deleteImportantDay} onSelectMemory={(id) => dispatch({ type: 'selected', id })} onUpdate={updateImportantDay} />}
         {view === 'copies' && (selectedCopyId ? <LongTermCopyTimeline copyId={selectedCopyId} onBack={() => setSelectedCopyId(undefined)} repository={copyRepository} /> : <LongTermCopiesView copies={longTermCopies} onCreate={createLongTermCopy} onSelect={setSelectedCopyId} onToggleAutoCollect={toggleCopyAutoCollect} topics={topics} />)}
         {view === 'echo' && <MemoryEchoPage history={echoHistory} onBack={() => setView('home')} onDismiss={(echo) => void dismissCurrentEcho(echo)} onExclude={(memory) => void excludeEchoMemory(memory)} onOpen={(id) => dispatch({ type: 'selected', id })} onOpenSettings={() => setEchoSettingsOpen(true)} onReflect={setReflectionEcho} onDisableTopic={(topic) => void disableEchoTopic(topic)} today={todayEchoes} />}
+        {view === 'summary' && <MemorySummaryPage date={summaryDate} error={summaryError} loading={summaryLoading} onBack={() => setView('home')} onDateChange={(date) => void openSummary(summaryPeriod, date)} onOpenMemory={(id) => dispatch({ type: 'selected', id })} onPeriodChange={(period) => void openSummary(period, summaryDate)} period={summaryPeriod} summary={memorySummary} />}
+        {view === 'vault' && <DataVaultPage appLockRepository={appLockRepository} lockStatus={lockStatus} onBack={() => setView('home')} onLockStatusChange={(next) => { setLockStatus(next); if (next.configured) setLockSkipped(false); }} repository={vaultRepository} />}
       </main>
       <nav className="bottom-nav"><button className={view === 'home' ? 'active' : ''} onClick={() => setView('home')} type="button"><span>▦</span>记忆</button><button className={view === 'timeline' ? 'active' : ''} onClick={() => setView('timeline')} type="button"><span>☷</span>时间线</button><button className={view === 'copies' ? 'active' : ''} onClick={() => { setView('copies'); setSelectedCopyId(undefined); }} type="button"><span>◌</span>长期副本</button><button className={view === 'important' ? 'active' : ''} onClick={() => setView('important')} type="button"><span>♡</span>重要日子</button></nav>
       {selectedMemory && !editor && <MemoryDetail imageUrl={imageUrls[selectedMemory.id]} memory={selectedMemory} onClose={() => dispatch({ type: 'selected' })} onDelete={() => void removeMemory()} onEdit={() => setEditor(selectedMemory)} reflections={selectedReflections} />}

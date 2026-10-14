@@ -38,6 +38,7 @@ export type MemoryView = {
   createdAt: Date;
   updatedAt: Date;
   echoExcluded: boolean;
+  summaryExcluded: boolean;
 };
 
 @Injectable()
@@ -179,6 +180,12 @@ export class MemoriesService {
     return this.prisma.memory.update({ where: { id }, data: { echoExcluded } });
   }
 
+  async setSummaryExcluded(userId: string, id: string, summaryExcluded: boolean) {
+    const current = await this.prisma.memory.findFirst({ where: { id, userId, deletedAt: null } });
+    if (!current) throw new NotFoundException('记忆不存在');
+    return this.prisma.memory.update({ where: { id }, data: { summaryExcluded } });
+  }
+
   private toView(memory: any): MemoryView {
     const topics = (memory.topics ?? []).map((item: any) => ({ id: item.topic?.id ?? item.topicId, name: item.topic?.name ?? '' }));
     return {
@@ -195,6 +202,7 @@ export class MemoriesService {
       topicIds: topics.map((topic: { id: string }) => topic.id),
       topics,
       echoExcluded: memory.echoExcluded ?? false,
+      summaryExcluded: memory.summaryExcluded ?? false,
       createdAt: memory.createdAt,
       updatedAt: memory.updatedAt,
     };

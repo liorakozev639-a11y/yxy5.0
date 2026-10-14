@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { LOCAL_USER_ID } from '../common/local-user.js';
 import { MemoriesService } from './memories.service.js';
-import { CreateMemoryDto, MemoryFilterDto, UpdateMemoryDto, UpdateMemoryEchoSettingDto } from './memory.dto.js';
+import { CreateMemoryDto, MemoryFilterDto, UpdateMemoryDto, UpdateMemoryEchoSettingDto, UpdateMemorySummarySettingDto } from './memory.dto.js';
 
 @Controller('memories')
 export class MemoriesController {
@@ -22,6 +22,11 @@ export class MemoriesController {
   @Patch(':id/echo-setting')
   setEchoSetting(@Param('id') id: string, @Body() input: UpdateMemoryEchoSettingDto) {
     return this.memoriesService.setEchoExcluded(LOCAL_USER_ID, id, input.echoExcluded);
+  }
+
+  @Patch(':id/summary-setting')
+  setSummarySetting(@Param('id') id: string, @Body() input: UpdateMemorySummarySettingDto) {
+    return this.memoriesService.setSummaryExcluded(LOCAL_USER_ID, id, input.summaryExcluded);
   }
 
   @Delete(':id')

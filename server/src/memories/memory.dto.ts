@@ -36,3 +36,7 @@ export class MemoryFilterDto {
 export class UpdateMemoryEchoSettingDto {
   @IsBoolean() echoExcluded!: boolean;
 }
+
+export class UpdateMemorySummarySettingDto {
+  @IsBoolean() summaryExcluded!: boolean;
+}

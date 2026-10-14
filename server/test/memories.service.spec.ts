@@ -106,4 +106,18 @@ describe('MemoriesService', () => {
     await expect(service.setEchoExcluded('local-user', 'memory-1', true)).resolves.toMatchObject({ echoExcluded: true });
     expect(update).toHaveBeenCalledWith({ where: { id: 'memory-1' }, data: { echoExcluded: true } });
   });
+
+  it('lets the owner exclude a memory from future monthly and yearly summaries', async () => {
+    const update = vi.fn(async () => ({ id: 'memory-1', summaryExcluded: true }));
+    const prisma = {
+      memory: {
+        findFirst: vi.fn(async () => ({ id: 'memory-1', userId: 'local-user', deletedAt: null })),
+        update,
+      },
+    };
+    const service = new MemoriesService(prisma as never);
+
+    await expect(service.setSummaryExcluded('local-user', 'memory-1', true)).resolves.toMatchObject({ summaryExcluded: true });
+    expect(update).toHaveBeenCalledWith({ where: { id: 'memory-1' }, data: { summaryExcluded: true } });
+  });
 });

@@ -1,4 +1,5 @@
-import type { MemorySummary, SummaryPeriod, SummaryRank } from '../domain/memory-summary';
+import type { MemorySummary, StoryPeriodType, SummaryListItem, SummaryPeriod, SummaryRank, SummaryReflection } from '../domain/memory-summary';
+import { SummaryArchivePage } from './SummaryArchivePage';
 
 type Props = {
   summary?: MemorySummary;
@@ -10,9 +11,17 @@ type Props = {
   onDateChange: (date: string) => void;
   onBack: () => void;
   onOpenMemory?: (id: string) => void;
+  archive?: {
+    summaries: SummaryListItem[];
+    reflections: SummaryReflection[];
+    filter: StoryPeriodType;
+    onFilterChange: (filter: StoryPeriodType) => void;
+    onOpen: (summaryId: string) => void;
+  };
 };
 
-export function MemorySummaryPage({ summary, period, date, loading, error, onPeriodChange, onDateChange, onBack, onOpenMemory }: Props) {
+export function MemorySummaryPage({ summary, period, date, loading, error, onPeriodChange, onDateChange, onBack, onOpenMemory, archive }: Props) {
+  if (archive) return <SummaryArchivePage {...archive} onBack={onBack} />;
   const empty = summary && summary.memoryCount === 0;
   return (
     <section className="page-section summary-page">

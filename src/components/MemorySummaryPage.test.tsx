@@ -1,7 +1,7 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import type { MemorySummary } from '../domain/memory-summary';
+import type { MemorySummary, SummaryListItem } from '../domain/memory-summary';
 import { MemorySummaryPage } from './MemorySummaryPage';
 
 const base: MemorySummary = {
@@ -30,5 +30,17 @@ describe('MemorySummaryPage', () => {
 
     expect(html).toContain('这个月还没有记忆');
     expect(html).not.toContain('你度过了精彩的一月');
+  });
+
+  it('can render the persistent summary archive instead of generating a live report', () => {
+    const archived: SummaryListItem = {
+      id: 'summary-1', periodType: 'MONTH', periodKey: '2026-09', status: 'READY', generationMode: 'TEMPLATE',
+      isCompact: false, viewedAt: null, lastViewedPage: 0, version: 1, createdAt: '', generatedAt: '', updatedAt: '',
+    };
+    const html = renderToStaticMarkup(<MemorySummaryPage archive={{ filter: 'MONTH', summaries: [archived], reflections: [], onFilterChange: () => undefined, onOpen: () => undefined }} date="2026-10-01" onBack={() => undefined} onDateChange={() => undefined} onPeriodChange={() => undefined} period="month" />);
+
+    expect(html).toContain('情绪电影档案馆');
+    expect(html).toContain('2026年9月');
+    expect(html).not.toContain('总结日期');
   });
 });

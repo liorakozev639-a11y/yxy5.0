@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { buildMemorySummary, getSummaryRange, type SummaryPeriod } from './summary.domain.js';
+import type { SummaryPreferenceInput } from './summary.dto.js';
 
 @Injectable()
 export class SummariesService {
@@ -39,5 +40,56 @@ export class SummariesService {
       })),
       copies.map((copy) => ({ id: copy.id, name: copy.name, lifecycleStatus: copy.lifecycleStatus, memoryCount: copy.memoryLinks.length })),
     );
+  }
+
+  async getPreferences(userId: string) {
+    const preference = await this.prisma.summaryPreference.findUnique({ where: { userId } });
+    if (!preference) {
+      return {
+        userId,
+        enabled: true,
+        allowText: true,
+        allowPhotos: true,
+        allowCloudAi: false,
+        reviewed: false,
+        consentReviewedAt: null,
+      };
+    }
+    return this.preferenceView(preference);
+  }
+
+  async updatePreferences(userId: string, input: SummaryPreferenceInput) {
+    if (input.reviewed !== true) throw new BadRequestException('请先确认总结与云端 AI 授权');
+    const consentReviewedAt = new Date();
+    const preference = await this.prisma.summaryPreference.upsert({
+      where: { userId },
+      create: {
+        userId,
+        enabled: input.enabled ?? true,
+        allowText: input.allowText ?? true,
+        allowPhotos: input.allowPhotos ?? true,
+        allowCloudAi: input.allowCloudAi ?? false,
+        consentReviewedAt,
+      },
+      update: {
+        ...(input.enabled === undefined ? {} : { enabled: input.enabled }),
+        ...(input.allowText === undefined ? {} : { allowText: input.allowText }),
+        ...(input.allowPhotos === undefined ? {} : { allowPhotos: input.allowPhotos }),
+        ...(input.allowCloudAi === undefined ? {} : { allowCloudAi: input.allowCloudAi }),
+        consentReviewedAt,
+      },
+    });
+    return this.preferenceView(preference);
+  }
+
+  private preferenceView(preference: {
+    userId: string;
+    enabled: boolean;
+    allowText: boolean;
+    allowPhotos: boolean;
+    allowCloudAi: boolean;
+    consentReviewedAt: Date | null;
+  }) {
+    return { ...preference, reviewed: Boolean(preference.consentReviewedAt) };
   }
 }

@@ -6,6 +6,7 @@ export interface SummaryStoryMemory {
   id: string;
   mediaId?: string;
   imageUrl?: string;
+  storagePath?: string;
   title: string;
   note: string;
   mood: string;
@@ -38,6 +39,8 @@ export interface SummarySnapshot {
   longTermCopies: SummaryCopySnapshot[];
   allowText: boolean;
   allowPhotos: boolean;
+  sourceHash: string;
+  encouragement?: string;
 }
 
 export type SummaryPageType = 'COVER' | 'OVERVIEW' | 'MOOD' | 'MEMORY' | 'COPY' | 'SEASON' | 'QUOTE' | 'ORDINARY' | 'KEYWORD' | 'CLOSING' | 'REFLECTION';

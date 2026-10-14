@@ -41,6 +41,8 @@ function snapshot(memories: SummaryStoryMemory[], periodType: 'MONTH' | 'YEAR' =
     longTermCopies: [],
     allowText: true,
     allowPhotos: true,
+    sourceHash: 'fixture-hash',
+    encouragement: undefined,
   };
 }
 

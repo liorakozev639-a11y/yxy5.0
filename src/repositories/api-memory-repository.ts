@@ -15,6 +15,7 @@ export type ApiMemory = {
   topicIds: string[];
   topics: Array<{ id: string; name: string }>;
   echoExcluded?: boolean;
+  summaryExcluded?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -85,6 +86,13 @@ export class ApiMemoryRepository {
     await this.client.request(`/api/memories/${id}`, { method: 'DELETE' });
   }
 
+  async setSummaryExcluded(id: string, summaryExcluded: boolean): Promise<void> {
+    await this.client.request(`/api/memories/${encodeURIComponent(id)}/summary-setting`, {
+      method: 'PATCH',
+      body: JSON.stringify({ summaryExcluded }),
+    });
+  }
+
   private map(item: ApiMemory): Memory {
     return mapApiMemory(item);
   }
@@ -109,6 +117,7 @@ export function mapApiMemory(item: ApiMemory): Memory {
     topicIds: item.topicIds ?? item.topics?.map((topic) => topic.id) ?? [],
     topics: item.topics ?? [],
     echoExcluded: item.echoExcluded ?? false,
+    summaryExcluded: item.summaryExcluded ?? false,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
   };
@@ -116,5 +125,5 @@ export function mapApiMemory(item: ApiMemory): Memory {
 
 function unique(values: string[]) { return [...new Set(values.map((value) => value.trim()).filter(Boolean))]; }
 
-export type MemoryRepositoryLike = Pick<ApiMemoryRepository, 'get' | 'getAll' | 'put' | 'remove'>;
+export type MemoryRepositoryLike = Pick<ApiMemoryRepository, 'get' | 'getAll' | 'put' | 'remove' | 'setSummaryExcluded'>;
 export type MemoryDraftWithApi = MemoryDraft;

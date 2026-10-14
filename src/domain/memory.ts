@@ -12,6 +12,7 @@ export type Memory = {
   topicIds?: string[];
   topics?: Array<{ id: string; name: string }>;
   echoExcluded?: boolean;
+  summaryExcluded?: boolean;
   createdAt: string;
   updatedAt: string;
 };

@@ -3,11 +3,11 @@ import { ApiMemoryRepository } from './api-memory-repository';
 
 describe('ApiMemoryRepository', () => {
   it('maps the API page into the existing Memory shape', async () => {
-    const client = { request: vi.fn(async () => ({ items: [{ id: 'memory-1', mediaId: 'media-1', imageUrl: '/api/media/media-1/file', title: '海边的下午', note: '海边', mood: '开心', eventAt: '2026-10-12T10:00:00.000Z', timezone: 'Asia/Shanghai', statuses: ['约会'], topicIds: ['topic-love'], topics: [{ id: 'topic-love', name: '恋爱' }], createdAt: '2026-10-12T10:00:00.000Z', updatedAt: '2026-10-12T10:00:00.000Z' }], nextCursor: undefined })) };
+    const client = { request: vi.fn(async () => ({ items: [{ id: 'memory-1', mediaId: 'media-1', imageUrl: '/api/media/media-1/file', title: '海边的下午', note: '海边', mood: '开心', eventAt: '2026-10-12T10:00:00.000Z', timezone: 'Asia/Shanghai', statuses: ['约会'], topicIds: ['topic-love'], topics: [{ id: 'topic-love', name: '恋爱' }], echoExcluded: false, summaryExcluded: true, createdAt: '2026-10-12T10:00:00.000Z', updatedAt: '2026-10-12T10:00:00.000Z' }], nextCursor: undefined })) };
     const repository = new ApiMemoryRepository(client as never);
 
     const memories = await repository.getAll();
-    expect(memories[0]).toMatchObject({ id: 'memory-1', mediaId: 'media-1', imageUrl: '/api/media/media-1/file', title: '海边的下午', note: '海边', mood: '开心', statuses: ['约会'], topicIds: ['topic-love'] });
+    expect(memories[0]).toMatchObject({ id: 'memory-1', mediaId: 'media-1', imageUrl: '/api/media/media-1/file', title: '海边的下午', note: '海边', mood: '开心', statuses: ['约会'], topicIds: ['topic-love'], summaryExcluded: true });
   });
 
   it('loads every cursor page without duplicating memories', async () => {
@@ -56,5 +56,17 @@ describe('ApiMemoryRepository', () => {
     })).rejects.toThrow('database failed');
 
     expect(request).toHaveBeenNthCalledWith(3, '/api/media/media-new', { method: 'DELETE' });
+  });
+
+  it('updates the per-memory summary exclusion setting', async () => {
+    const request = vi.fn(async () => ({ id: 'memory-1', summaryExcluded: true }));
+    const repository = new ApiMemoryRepository({ request } as never);
+
+    await repository.setSummaryExcluded('memory-1', true);
+
+    expect(request).toHaveBeenCalledWith('/api/memories/memory-1/summary-setting', {
+      method: 'PATCH',
+      body: JSON.stringify({ summaryExcluded: true }),
+    });
   });
 });

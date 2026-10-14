@@ -13,12 +13,13 @@ from docx.oxml.ns import qn
 from docx.shared import Cm, Inches, Pt, RGBColor
 
 
-ROOT = Path(r"D:\yxy5.0")
+ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 FLOW = DOCS / "照片记忆本业务逻辑流程图.png"
 MOCKUP = DOCS / "照片记忆本产品示意图.png"
 PRD = DOCS / "照片记忆本产品需求文档_PRD_V2.docx"
 TECH = DOCS / "照片记忆本前后端技术方案.docx"
+CODEMAP = DOCS / "照片记忆本代码模块说明.docx"
 
 FONT_CN = "Microsoft YaHei"
 FONT_SERIF = "SimSun"
@@ -87,6 +88,14 @@ def set_repeat_table_header(row):
     tr_pr.append(tbl_header)
 
 
+def set_row_cant_split(row):
+    tr_pr = row._tr.get_or_add_trPr()
+    cant_split = tr_pr.find(qn("w:cantSplit"))
+    if cant_split is None:
+        cant_split = OxmlElement("w:cantSplit")
+        tr_pr.append(cant_split)
+
+
 def set_cell_width(cell, width_inches):
     tc_pr = cell._tc.get_or_add_tcPr()
     tc_w = tc_pr.find(qn("w:tcW"))
@@ -102,13 +111,16 @@ def add_table(doc, headers: list[str], rows: list[list[str]], widths: list[float
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.style = "Table Grid"
     set_repeat_table_header(table.rows[0])
+    set_row_cant_split(table.rows[0])
     for i, header in enumerate(headers):
         shade(table.rows[0].cells[i], TEAL)
         set_cell_text(table.rows[0].cells[i], header, header=True, center=len(header) <= 8)
         if widths:
             set_cell_width(table.rows[0].cells[i], widths[i])
     for row_idx, values in enumerate(rows):
-        cells = table.add_row().cells
+        row = table.add_row()
+        set_row_cant_split(row)
+        cells = row.cells
         for i, value in enumerate(values):
             if row_idx % 2 == 1:
                 shade(cells[i], TEAL_LIGHT)
@@ -117,6 +129,16 @@ def add_table(doc, headers: list[str], rows: list[list[str]], widths: list[float
                 set_cell_width(cells[i], widths[i])
     doc.add_paragraph().paragraph_format.space_after = Pt(2)
     return table
+
+
+def add_page_start(doc):
+    """Start a new page without attaching the break to a heading or table."""
+    anchor = doc.add_paragraph()
+    anchor.paragraph_format.page_break_before = True
+    anchor.paragraph_format.space_before = Pt(0)
+    anchor.paragraph_format.space_after = Pt(0)
+    run = anchor.add_run("\u00a0")
+    set_font(run, size=1, color="FFFFFF")
 
 
 def configure_document(doc: Document):
@@ -182,7 +204,7 @@ def add_cover(doc, title, subtitle, version):
     p2.paragraph_format.space_after = Pt(42)
     meta = add_table(doc, ["项目", "内容"], [
         ["文档版本", version],
-        ["更新日期", "2026年10月13日"],
+        ["更新日期", "2026年10月14日"],
         ["产品形态", "本地优先的网页版 MVP"],
         ["代码位置", r"D:\yxy5.0"],
         ["数据位置", r"D:\yxy5.0\data"],
@@ -244,11 +266,11 @@ def add_figure(doc, path: Path, caption: str, width=7.0):
 def build_prd():
     doc = Document()
     configure_document(doc)
-    add_cover(doc, "照片记忆本产品需求文档", "完整功能版  先有照片后补文字", "V3.0")
+    add_cover(doc, "照片记忆本产品需求文档", "完整功能版  先有照片后补文字", "V4.0")
     add_intro(
         doc,
         "照片记忆本定位为本地优先的情感型记忆产品。用户先保存照片，再按需要补充标题、备忘录、心情、状态和主题；系统通过长期副本、记忆回声、月度年度总结，把零散照片转化为可以持续回看的个人记忆档案。",
-        "本版覆盖当前网页 MVP 的全部功能、数据安全能力和业务边界。产品不依赖外部 AI，也不会把照片或文字上传到第三方；运行数据固定保存在 D 盘项目目录和本机 PostgreSQL。",
+        "本版覆盖当前网页 MVP 的全部功能、情绪电影、数据安全能力和业务边界。默认使用本地模板生成总结；只有用户主动开启云端 AI 后，后端才会发送授权范围内的最小结构化内容。运行数据固定保存在 D 盘项目目录和本机 PostgreSQL。",
     )
     add_figure(doc, MOCKUP, "产品功能总览示意图", 7.0)
     add_contents(doc, [
@@ -289,7 +311,7 @@ def build_prd():
         ["批量整理", "一次导入多张相册照片", "询问是否使用同一主题，逐张保存时间"],
         ["长期经历", "跟踪恋爱或考研过程", "创建长期副本并自动收集同主题记忆"],
         ["偶然回看", "打开首页时想看到过去", "当天首次打开生成最多三条记忆回声"],
-        ["阶段复盘", "查看这个月或这一年做了什么", "生成确定性统计和代表记忆"],
+        ["阶段复盘", "查看这个月或这一年做了什么", "生成第二人称情绪电影和代表记忆"],
         ["迁移与保护", "备份或迁移本机数据", "先验证应用锁，再导出、备份或恢复"],
     ], [1.3, 2.45, 2.9])
 
@@ -300,7 +322,7 @@ def build_prd():
         ["长期副本", "创建  查看  自动收集  暂停  完成  归档", "P0"],
         ["重要日子", "创建纪念日并关联已有照片记忆", "P0"],
         ["记忆回声", "今日回声  三十天历史  感言  排除设置", "P0"],
-        ["记忆总结", "月度年度切换  排行  代表照片  副本进展", "P0"],
+        ["情绪电影", "月度年度总结  沉浸播放  编辑  感言  档案馆", "P0"],
         ["数据保险箱", "导出  恢复  数据库备份  存储位置  应用锁", "P0"],
     ], [1.4, 4.4, 0.85])
 
@@ -366,13 +388,42 @@ def build_prd():
     ])
 
     doc.add_heading("7 月度与年度总结", level=1)
-    doc.add_paragraph("总结模块从记忆首页进入，不增加底部导航。用户选择月份或年份后，系统按 Asia Shanghai 时区读取真实记录并生成统计结果。")
-    add_table(doc, ["输出", "数据来源", "空数据处理"], [
-        ["记忆数 照片数 记录天数", "所选周期内未删除记忆", "显示零值和说明"],
-        ["主题 心情 状态排行", "主题关系 mood statuses", "不展示空排行"],
-        ["代表记忆", "按确定性规则选择最多三条", "不生成虚构文案"],
-        ["长期副本进展", "副本状态和周期内关联记忆数", "没有副本时显示空态"],
-    ], [1.85, 3.05, 2.05])
+    doc.add_paragraph("月度与年度总结统一命名为“情绪电影”。它从首页提醒卡片和独立档案馆进入，以类似年度回顾的沉浸式翻页形式，用第二人称帮助用户回看自己经历过的阶段。")
+    doc.add_heading("7.1 生成与提醒", level=2)
+    add_bullets(doc, [
+        "用户首次确认总结授权后，文字和照片默认参与；两者都可以单独关闭，云端 AI 默认关闭。",
+        "每月第一天起，用户当天首次打开首页时检查上个月；新年首次打开时同时检查上一年。",
+        "有真实记忆才创建总结；空周期不创建总结，也不显示虚构故事。",
+        "未读总结在首页显示“已经生成，可以前往查看”；关闭提醒不删除总结，之后仍可从档案馆进入。",
+        "生成结果保存在 PostgreSQL；阅读进度自动保存，再次打开从上次页面继续。",
+    ])
+    doc.add_heading("7.2 故事结构", level=2)
+    add_table(doc, ["类型", "正常结构", "精简结构"], [
+        ["月度", "7 页：封面、概览、情绪开场、代表记忆、长期副本、收束、感言", "仅 1 至 2 条记忆时生成 4 页"],
+        ["年度", "12 页：封面、概览、季节、长期副本、情绪、代表记忆、原话、日常、收束、感言", "仅 1 至 2 条记忆时生成 4 页"],
+    ], [1.05, 4.15, 1.7])
+    add_bullets(doc, [
+        "情绪开场使用当期出现次数最多的心情；并列时优先最近出现的心情。",
+        "如果整期没有心情记录，系统从鼓励文案中稳定选择一句，并避免连续重复最近三次。",
+        "代表记忆优先选择标题、备忘录、状态和主题信息更完整的照片，并尽量分布在不同日期。",
+        "所有数字、主题、心情、状态、照片和原话必须来自冻结快照；不得补写用户没有记录的事实。",
+        "当前版本不加入背景音乐，也不加入双人共同空间或双人叙事。",
+    ])
+    doc.add_heading("7.3 回看与编辑", level=2)
+    add_table(doc, ["能力", "业务规则"], [
+        ["沉浸播放", "全屏逐页浏览，窄屏自适应；系统减少动态效果设置开启时关闭非必要动画"],
+        ["档案馆", "按月度或年度筛选，查看已生成、未读和已读总结，并可删除单份总结"],
+        ["编辑", "可修改旁白、替换授权照片和调整页面顺序；乐观锁冲突时要求刷新，避免覆盖新版本"],
+        ["重新生成", "重新读取当前记忆和授权设置，覆盖旧页面；空周期则移除旧总结"],
+        ["回声感言", "看完后可写一段总结感言并选择封面照片，作为独立记录保留"],
+    ], [1.45, 5.5])
+    doc.add_heading("7.4 AI 与隐私", level=2)
+    add_bullets(doc, [
+        "本地模板始终可用；缺少 AI 配置、网络超时、接口失败或输出校验不通过时自动回退本地模板。",
+        "只有用户主动开启云端 AI，后端才发送授权范围内的最小结构化快照；本地路径、数据库连接和密钥永不发送。",
+        "AI 仅改写第二人称旁白。后端逐页校验页面数量、事实引用和数字，禁止引入快照外事实。",
+        "单条记忆可以设置“不参与总结”；软删除记忆和被排除记忆都不会进入新快照。",
+    ])
 
     doc.add_heading("8 数据保险箱与应用锁", level=1)
     doc.add_heading("8.1 数据保险箱", level=2)
@@ -408,11 +459,13 @@ def build_prd():
         ["导入过程中失败", "数据库事务回滚，清理本次暂存照片，导入记录标记失败"],
         ["PostgreSQL 不可用", "备份标记失败，错误信息脱敏，不泄露连接串或密码"],
         ["应用锁会话失效", "业务 API 返回 401，前端切换到锁屏，保留尚未发送的表单输入"],
+        ["云端 AI 不可用", "不阻断总结生成，校验失败或请求异常时立即使用本地模板"],
+        ["总结版本冲突", "返回 409，前端提示刷新，禁止旧版本覆盖较新的旁白或页面顺序"],
     ], [2.0, 4.95])
 
     doc.add_heading("11 非功能要求", level=1)
     add_table(doc, ["类别", "要求"], [
-        ["隐私", "不上传第三方；不记录明文密码；数据库连接信息仅返回脱敏用户名"],
+        ["隐私", "默认本地模板；仅经授权向云端 AI 发送最小快照；不记录明文密码；数据库连接信息仅返回脱敏用户名"],
         ["安全", "业务 API 受服务器 Guard 保护；ZIP 导入在写入前完成路径 哈希 关系和大小校验"],
         ["可靠性", "数据库写入使用事务；导出和备份先写临时文件再原子移动"],
         ["可恢复性", "恢复前自动生成 JSON 安全快照；重复导入不复制相同记录"],
@@ -427,20 +480,21 @@ def build_prd():
         ["A01", "单张和批量图片可保存，编辑标题后列表即时更新", "已实现"],
         ["A02", "新建主题能立即用于长期副本，授权后同主题自动收集", "已实现"],
         ["A03", "记忆回声当天最多三条，历史三十天，可保存感言", "已实现"],
-        ["A04", "月度和年度总结使用真实数据并处理空周期", "已实现"],
+        ["A04", "月度和年度情绪电影使用真实快照，支持提醒、播放、进度、编辑、再生成和感言", "已实现并自动测试"],
         ["A05", "JSON ZIP PDF 可生成，ZIP 含 manifest 和原图", "已实现并真实验收"],
         ["A06", "导入先预检后恢复，危险压缩包被拒绝", "已实现并自动测试"],
         ["A07", "pg dump 备份成功并记录大小与 SHA 256", "已实现并真实验收"],
         ["A08", "应用锁从前端和 API 两层阻止未授权访问", "已实现并自动测试"],
         ["A09", "代码与运行数据只在 D 盘项目及指定数据目录", "已验证"],
     ], [0.7, 4.65, 1.6])
-    doc.add_paragraph("本次发布前验证结果为前端 28 个测试文件共 68 项通过，后端 23 个测试文件共 90 项通过；前后端生产构建通过，Prisma schema 有效，5 个数据库迁移全部应用。")
+    doc.add_paragraph("本次发布前验证基线为前端 38 个测试文件共 100 项通过，后端 33 个测试文件共 136 项通过；前后端生产构建通过，Prisma schema 有效，6 个数据库迁移全部应用。最终交付前会再次执行全量验证。")
 
     doc.add_heading("13 版本边界与后续规划", level=1)
     add_bullets(doc, [
         "当前为单用户本地版，不包含账号体系、多人共享、评论和社交关系。",
         "不提供云同步、跨设备自动同步、地图轨迹、视频处理或面部识别。",
-        "总结使用确定性统计，不调用大模型自动创作文案。",
+        "总结默认使用确定性统计和本地模板；云端 AI 只在用户授权且服务端完成配置时用于改写旁白。",
+        "当前不提供背景音乐，不提供双人共同空间、双人年度回顾或共同编辑。",
         "下一优先级是把重要日子和自定义候选列表迁移到 PostgreSQL，并纳入统一导出。",
         "后续可增加应用启动时的自动备份策略、备份保留周期和恢复演练提醒。",
     ])
@@ -451,10 +505,10 @@ def build_prd():
 def build_tech():
     doc = Document()
     configure_document(doc)
-    add_cover(doc, "照片记忆本前后端技术方案", "本地优先网页 MVP  完整实现版", "V3.0")
+    add_cover(doc, "照片记忆本前后端技术方案", "本地优先网页 MVP  完整实现版", "V4.0")
     add_intro(
         doc,
-        "系统采用 React TypeScript Vite 前端、NestJS Prisma 后端和本机 PostgreSQL。图片作为文件保存在 D 盘，结构化数据保存在 PostgreSQL；应用锁由服务器会话控制，数据保险箱提供导出、恢复和数据库备份。",
+        "系统采用 React TypeScript Vite 前端、NestJS Prisma 后端和本机 PostgreSQL。图片作为文件保存在 D 盘，结构化数据保存在 PostgreSQL；情绪电影以冻结快照、本地模板和可选云端 AI 构建，应用锁与数据保险箱保护本地数据。",
         "本文档描述当前代码的模块边界、数据模型、API、核心时序、安全控制、部署方式和验证结果。所有路径均以 D:\\yxy5.0 为项目根目录。",
     )
     add_figure(doc, FLOW, "产品业务流程与技术边界", 7.0)
@@ -472,6 +526,7 @@ def build_tech():
         ["文件处理", "Multer  AdmZip  Archiver  PDFKit", "图片上传 ZIP 校验与打包 中文 PDF"],
         ["安全", "Node crypto scrypt SHA 256", "密码摘要 会话令牌摘要 文件校验"],
         ["备份", "pg dump", "PostgreSQL custom 格式数据库备份"],
+        ["总结生成", "本地模板  可选兼容 OpenAI 的 Chat Completions", "第二人称旁白 事实校验和自动回退"],
     ], [1.1, 2.45, 3.3])
     add_bullets(doc, [
         "前端地址为 http://127.0.0.1:5173，Vite 将 /api 代理到后端。",
@@ -498,13 +553,13 @@ def build_tech():
         ["长期副本", "LongTermCopiesView LongTermCopyTimeline LongTermCopyDecisionDialog", "副本列表 当前副本 授权决策"],
         ["重要日子", "ImportantDaysView", "IndexedDB 重要日子及关联记忆"],
         ["记忆回声", "MemoryEchoCard MemoryEchoPage EchoReflectionEditor EchoSettingsPanel", "今日回声 历史 感言 偏好"],
-        ["记忆总结", "MemorySummaryPage", "周期 日期 数据 加载 错误"],
+        ["情绪电影", "SummaryReminderCard SummaryArchivePage SummaryStoryPlayer SummaryStoryPage SummaryStoryEditor SummaryReflectionEditor", "授权 到期提醒 档案 播放进度 页面编辑 感言"],
         ["数据保险箱", "DataVaultPage AppLockGate", "存储状态 导入预览 验证动作 锁状态"],
     ], [1.25, 3.8, 1.8])
     doc.add_heading("3.2 状态管理", level=2)
     add_bullets(doc, [
         "记忆列表使用 useReducer 管理加载 新增批量 更新 删除 选择和回声排除状态。",
-        "主题 长期副本 重要日子 回声 总结和应用锁使用页面级 useState。",
+        "主题 长期副本 重要日子 回声和应用锁使用页面级状态；useMemorySummaries 用 reducer 管理总结授权、提醒、档案、播放、编辑和感言状态机。",
         "ApiClient 默认 credentials include，使 HttpOnly 会话 Cookie 自动随请求发送。",
         "任何业务 API 返回 401 时，ApiClient 派发 photo memory lock required 事件；App 重新读取锁状态并显示 AppLockGate。",
         "应用锁未解锁前不触发记忆 主题 副本和回声请求，避免页面内容闪现。",
@@ -515,7 +570,7 @@ def build_tech():
         ["ApiTopicRepository", "主题列表 创建 更新提示策略与回声设置"],
         ["ApiLongTermCopyRepository", "副本 CRUD 回填 时间线和自动收集开关"],
         ["ApiMemoryEchoRepository", "今日回声 历史 感言 偏好与排除"],
-        ["ApiSummaryRepository", "按月或年读取确定性总结"],
+        ["ApiSummaryRepository", "到期检查 授权偏好 生成 列表 详情 进度 页面编辑 再生成 感言和删除"],
         ["ApiVaultRepository", "导出 导入预检 恢复 备份与状态"],
         ["ApiAppLockRepository", "设置 解锁 验证 锁定 改密 恢复与开关"],
     ], [2.0, 4.85])
@@ -527,7 +582,7 @@ def build_tech():
         ["TopicsModule", "主题和提示设置", "同用户名称唯一"],
         ["LongTermCopiesModule", "副本生命周期 回填和时间线", "同用户同主题唯一"],
         ["EchoesModule", "生成每日回声 感言和偏好", "确定性评分 每日唯一 最多三条"],
-        ["SummariesModule", "月度年度统计", "Asia Shanghai 边界 稳定排序"],
+        ["SummariesModule", "月度年度情绪电影生命周期", "上海时区快照 故事计划 本地模板 可选 AI 事实校验 乐观锁"],
         ["VaultModule", "导出 导入 备份 状态和文件下载", "清单 哈希 事务 pg dump"],
         ["AppLockModule", "密码 会话 恢复和全局门禁", "scrypt 令牌摘要 Cookie Guard"],
     ], [1.65, 2.6, 2.6])
@@ -535,13 +590,17 @@ def build_tech():
     doc.add_heading("5 数据模型", level=1)
     add_table(doc, ["实体", "关键字段", "关系与约束"], [
         ["MediaAsset", "storagePath mimeType fileSize captureAt", "一对一 Memory  可作为副本封面"],
-        ["Memory", "title note mood statuses eventAt timezone echoExcluded", "唯一 mediaId  软删除  多对多 Topic"],
+        ["Memory", "title note mood statuses eventAt timezone echoExcluded summaryExcluded", "唯一 mediaId  软删除  多对多 Topic 可单条排除总结"],
         ["Topic", "name isNone suppressLongTermPrompt echoEnabled", "userId name 唯一"],
         ["LongTermCopy", "topicId lifecycleStatus autoCollectEnabled startDate", "userId topicId 唯一"],
         ["LongTermCopyMemory", "copyId memoryId linkedAt", "复合主键"],
         ["MemoryEcho", "echoDate echoType score displayOrder status", "用户 日期 记忆唯一"],
         ["EchoReflection", "memoryEchoId memoryId text sourceEchoDate", "回声可有一条感言"],
         ["EchoPreference", "enabled excludedMoods", "每用户一条"],
+        ["MemorySummary", "periodType periodKey status sourceHash generationMode version viewedAt", "用户 周期类型 周期键唯一；保存冻结快照和阅读进度"],
+        ["MemorySummaryPage", "pageType displayOrder narration payload factRefs version", "属于一份总结；页面顺序唯一；乐观锁编辑"],
+        ["SummaryReflection", "summaryId text coverMediaId", "每份总结最多一条回声感言"],
+        ["SummaryPreference", "enabled allowText allowPhotos allowCloudAi consentReviewedAt", "每用户一条授权和隐私偏好"],
         ["AppLockSetting", "passwordHash recoveryKeyHash failedAttempts lockedUntil", "每用户一条"],
         ["AppSession", "tokenHash expiresAt verifiedUntil", "令牌摘要唯一"],
         ["BackupRecord", "status storagePath fileSize checksum", "记录 pg dump 结果"],
@@ -558,7 +617,13 @@ def build_tech():
         ["副本扩展", "POST id/backfill  GET id/timeline", "历史回填和时间线"],
         ["回声", "GET /api/echoes/today  GET /api/echoes", "今日和最近三十天"],
         ["回声操作", "PUT id/reflection  POST id/dismiss", "感言和忽略"],
-        ["总结", "GET /api/summaries period date", "月度年度总结"],
+        ["总结检查", "GET /api/summaries/check", "当天首次进入时检查上月和上年并幂等生成"],
+        ["总结生成", "POST /api/summaries/generate", "按 MONTH 或 YEAR 与 periodKey 创建快照故事"],
+        ["总结列表详情", "GET /api/summaries  GET /api/summaries/:id", "档案筛选、兼容旧统计查询和完整页面详情"],
+        ["总结进度编辑", "PATCH /api/summaries/:id/progress  PATCH /api/summaries/:id/pages/:pageId", "保存阅读页、已读状态、旁白、照片和顺序"],
+        ["总结操作", "POST /api/summaries/:id/regenerate  POST /api/summaries/:id/reflection  DELETE /api/summaries/:id", "再生成、感言和删除"],
+        ["总结偏好", "GET PATCH /api/summary-preferences", "文字、照片、云端 AI 和总开关授权"],
+        ["记忆总结设置", "PATCH /api/memories/:id/summary-setting", "单条记忆加入或排除后续总结"],
         ["应用锁", "GET status  POST setup unlock verify lock recover change-password", "锁状态和凭证操作"],
         ["保险箱导出", "POST /api/vault/exports/json zip pdf", "生成导出文件"],
         ["保险箱导入", "POST /api/vault/imports/inspect  POST id/restore", "预检与恢复"],
@@ -593,12 +658,21 @@ def build_tech():
         "过滤软删除 排除记忆 禁用主题 禁用心情和最近展示记录。",
         "评分后使用确定性顺序取前三条，并通过数据库唯一约束处理并发。",
     ])
-    doc.add_heading("8.2 总结统计", level=2)
+    doc.add_heading("8.2 情绪电影快照与故事计划", level=2)
     add_bullets(doc, [
-        "month 使用当月第一天到下一月第一天，year 使用当年第一天到下一年第一天。",
-        "服务层查询周期内 Memory 和 LongTermCopy，再交给纯函数统计。",
-        "并列排行按计数降序后名称排序，代表记忆规则稳定，便于测试。",
-        "空周期返回完整零值结构，前端展示真实空态。",
+        "MONTH 使用当月第一天到下一月第一天，YEAR 使用当年第一天到下一年第一天，统一按 Asia Shanghai 切分。",
+        "SummarySnapshotService 只读取未删除且未排除的记忆，根据 allowText 和 allowPhotos 裁剪字段，并计算 SHA 256 sourceHash。",
+        "buildStoryPlan 对空周期返回 NO CONTENT；一至两条记忆生成四页精简版，正常月度七页、年度十二页。",
+        "最高频心情按次数、最近出现时间和中文名称稳定排序；无心情时从鼓励文案池稳定选取并避开最近三次。",
+        "代表记忆按内容完整度和日期去重评分，长期副本只展示周期内确实有关联记忆的进展。",
+    ])
+    doc.add_heading("8.3 旁白生成、校验与回退", level=2)
+    add_numbered(doc, [
+        "SummaryTemplateService 先为每一页生成可直接使用的第二人称本地旁白。",
+        "仅当 SummaryPreference 已确认且 allowCloudAi 为 true 时，SummaryAiAdapter 才发送裁剪后的结构化快照。",
+        "SummaryValidationService 验证页数、页序、factRefs、数字和引用事实，拒绝快照之外的内容。",
+        "AI 未配置、超时、返回格式错误或事实校验失败时，继续保存本地模板，generationMode 标记为 TEMPLATE。",
+        "保存时从 API 响应递归移除 sourceSnapshot 与 storagePath；密钥只存在服务端环境变量。",
     ])
 
     doc.add_heading("9 数据保险箱", level=1)
@@ -654,25 +728,28 @@ def build_tech():
         "PG_DUMP_PATH 默认使用 D:\\pgsql18\\pgsql\\pgAdmin 4\\runtime\\pg_dump.exe。",
         "LOCAL_USER_ID 默认 local user，可在独立测试进程中覆盖。",
         "PORT 默认 3001。",
+        "SUMMARY_AI_BASE_URL SUMMARY_AI_API_KEY SUMMARY_AI_MODEL 用于可选云端 AI；任一必需项缺失时走本地模板。",
+        "SUMMARY_AI_TIMEOUT_MS 控制 AI 请求超时，默认 12000 毫秒。所有真实密钥只放在未纳入 Git 的 server/.env。",
     ])
 
     doc.add_heading("12 测试与质量保证", level=1)
     add_table(doc, ["验证项", "结果"], [
-        ["前端测试", "28 个测试文件 68 项通过"],
-        ["后端测试", "23 个测试文件 90 项通过"],
+        ["前端测试", "38 个测试文件 100 项通过（功能完成时基线）"],
+        ["后端测试", "33 个测试文件 136 项通过（功能完成时基线）"],
         ["生产构建", "前端和后端均通过"],
-        ["Prisma", "schema valid，5 个 migration 全部已应用"],
+        ["Prisma", "schema valid，6 个 migration 全部已应用"],
         ["真实数据库", "PostgreSQL localhost 5433 可用"],
         ["真实导出", "JSON 10 KB  ZIP 1.1 MB  PDF 1.2 MB，均有效"],
         ["真实备份", "pg dump 38 KB，状态 COMPLETED，SHA 256 已记录"],
         ["浏览器冒烟", "首页 保险箱 存储路径和应用锁表单正常，控制台无错误"],
-        ["Git", "main 已推送 GitHub，本地和远程哈希一致"],
+        ["Git", "文档记录功能实现；最终全量验证完成后统一提交本地并推送 GitHub"],
     ], [2.0, 4.85])
     doc.add_heading("12.1 重点测试覆盖", level=2)
     add_bullets(doc, [
         "图片签名和 MIME 不一致、标题编辑、主题关系和副本自动收集。",
         "回声候选排序、每日幂等、排除设置和感言保存。",
-        "总结跨月跨年边界、并列排行、空周期和代表记忆。",
+        "总结跨月跨年边界、精简版、最高频心情、无心情鼓励、代表记忆和空周期。",
+        "总结授权裁剪、AI 不可用回退、事实引用校验、乐观锁冲突、播放进度、页面顺序和无音乐约束。",
         "ZIP Slip、绝对路径、压缩炸弹、坏哈希、关系损坏和重复导入。",
         "应用锁密码摘要、失败限流、过期会话、Cookie 属性和业务 API 门禁。",
         "pg dump 参数数组、路径含空格、成功失败记录和连接串脱敏。",
@@ -685,15 +762,301 @@ def build_tech():
         ["单用户固定 userId", "不支持多人或账号隔离", "引入本地账号和用户主表"],
         ["手动数据库备份", "依赖用户主动执行", "增加计划任务和保留策略"],
         ["本机 Cookie secure false", "只适用于 HTTP localhost", "部署 HTTPS 时启用 Secure"],
-        ["依赖安全公告无法联网复核", "需在可访问 npm registry 的环境检查", "CI 加入 npm audit 或 SCA"],
+        ["云端 AI 为可选外部依赖", "启用时会发送已授权的最小结构化内容", "保持默认关闭并在设置中明确服务提供方"],
+        ["当前无背景音乐和双人模式", "情绪电影专注个人图文回看", "仅在用户价值验证后再单独设计，不与当前范围混入"],
     ], [2.1, 2.2, 2.55])
 
     doc.save(TECH)
+
+
+FILE_DESCRIPTIONS = {
+    "src/App.tsx": "前端总编排器。创建各 Repository，加载记忆、主题、副本和应用锁，并把首页、时间线、长期副本、回声、情绪电影与保险箱串成单页应用。",
+    "src/main.tsx": "React 启动入口，把 App 挂载到 DOM，并载入全局样式。",
+    "src/app-state.ts": "记忆列表 reducer；统一处理初始化、批量新增、编辑、删除、选中和回声排除，避免页面状态分散。",
+    "src/api/client.ts": "REST 基础客户端。统一 JSON、超时、Cookie、错误消息和 401 锁屏事件，所有 API Repository 复用。",
+    "src/styles.css": "全局视觉系统与响应式规则；包含照片墙、弹窗、回声、保险箱和情绪电影的沉浸样式、窄屏布局及 reduced-motion 降级。",
+    "src/components/AppLockGate.tsx": "应用锁门面。根据未设置、已锁定、限流和恢复状态渲染表单，解锁前遮蔽全部业务页面。",
+    "src/components/BatchImportDialog.tsx": "批量导入向导。稳定保存文件队列，询问统一主题，显示逐项进度并只重试失败项。",
+    "src/components/DataVaultPage.tsx": "数据保险箱页面。展示存储位置，组织导出、导入预检/恢复、数据库备份和敏感操作再验证。",
+    "src/components/EchoReflectionEditor.tsx": "回声感言编辑器，把用户新的感受保存为独立感言而不改写原记忆。",
+    "src/components/EchoSettingsPanel.tsx": "记忆回声设置面板，控制总开关及心情、主题和单条记忆排除。",
+    "src/components/HomeView.tsx": "记忆首页布局，组合照片墙、搜索、添加入口、回声卡片和情绪电影提醒卡片。",
+    "src/components/ImportantDaysView.tsx": "重要日子列表和编辑界面，计算纪念日距离并关联已有记忆。",
+    "src/components/LongTermCopiesView.tsx": "长期副本总览；展示创建、生命周期、自动收集和进入时间线的操作。",
+    "src/components/LongTermCopyDecisionDialog.tsx": "主题首次授权弹窗，支持加入、暂不加入和以后不再询问。",
+    "src/components/LongTermCopyForm.tsx": "长期副本创建/编辑表单，选择唯一关联主题并维护名称、日期和状态。",
+    "src/components/LongTermCopyTimeline.tsx": "按事件时间稳定排列副本内照片、标题和备忘录。",
+    "src/components/MemoryCard.tsx": "照片墙单卡片，展示缩略图、标题、时间与主题，并触发详情。",
+    "src/components/MemoryDetail.tsx": "记忆详情与编辑入口，展示完整图文、标签、回声感言和总结排除开关。",
+    "src/components/MemoryEchoCard.tsx": "首页回声卡片，呈现单条回声理由、照片和查看/忽略/写感言动作。",
+    "src/components/MemoryEchoPage.tsx": "独立回声页面，浏览今日和最近三十天历史并进入设置。",
+    "src/components/MemoryForm.tsx": "单张记忆新增与编辑表单，处理标题、备忘录、时间、心情、状态、主题和自定义选项。",
+    "src/components/MemorySummaryPage.tsx": "保留的旧版统计总结页，供兼容按月/年统计查询；新体验由情绪电影组件承接。",
+    "src/components/SummaryArchivePage.tsx": "情绪电影档案馆，按月度/年度筛选并打开、继续或删除总结。",
+    "src/components/SummaryReflectionCard.tsx": "在档案馆展示已保存的月度/年度回声感言和封面。",
+    "src/components/SummaryReflectionEditor.tsx": "总结结束后的感言编辑器，校验文字并允许选择授权照片作为封面。",
+    "src/components/SummaryReminderCard.tsx": "首页未读总结提醒，提供立即查看、查看档案和本次关闭。",
+    "src/components/SummaryStoryEditor.tsx": "情绪电影页面编辑器，修改旁白、代表照片和顺序，并把版本号交给乐观锁接口。",
+    "src/components/SummaryStoryPage.tsx": "按 COVER、MOOD、MEMORY 等页面类型渲染故事页，严格使用后端公开 payload。",
+    "src/components/SummaryStoryPlayer.tsx": "全屏逐页播放器，处理上一页/下一页、关闭、继续阅读、已读和进入编辑/感言。",
+    "src/components/Toast.tsx": "轻量全局反馈条，用于显示成功、失败和需要用户注意的短消息。",
+    "src/hooks/use-memory-summaries.ts": "情绪电影前端状态机。负责首次检查、授权、提醒、档案加载、播放进度队列、页面编辑、重新生成、感言和删除。",
+    "src/domain/memory-summary.ts": "情绪电影领域类型与守卫；定义周期、状态、页面、偏好、感言及 READY 判断。",
+    "src/domain/memory.ts": "照片记忆核心模型、创建与更新输入、完整度和展示所需的类型。",
+    "src/domain/memory-echo.ts": "记忆回声、感言和偏好领域模型。",
+    "src/domain/memory-echo-state.ts": "回声前端 reducer 与状态转换，处理今日回声、历史、忽略、排除和感言。",
+    "src/domain/long-term-copy-policy.ts": "主题与长期副本授权决策规则，区分本次加入、继续询问和永久不询问。",
+    "src/domain/batch-import.ts": "批量导入队列、统一主题和失败项重试的纯业务函数。",
+    "src/domain/date.ts": "日期格式化、上海时区显示和分组辅助函数。",
+    "src/domain/important-day.ts": "重要日子模型、纪念日日期差和关联记忆规则。",
+    "src/domain/data-vault.ts": "导出、导入、备份、存储状态和应用锁的前端类型。",
+    "src/domain/options.ts": "默认心情、状态和主题候选项。",
+    "src/domain/topic.ts": "主题模型及提示、回声相关设置。",
+    "src/repositories/api-memory-repository.ts": "封装媒体上传和记忆 CRUD；自动遍历游标分页并把后端 DTO 转成前端模型。",
+    "src/repositories/api-topic-repository.ts": "封装主题列表、创建及提示策略更新。",
+    "src/repositories/api-long-term-copy-repository.ts": "封装长期副本 CRUD、回填、时间线与自动收集开关。",
+    "src/repositories/api-memory-echo-repository.ts": "封装今日回声、三十天历史、感言、忽略及回声偏好接口。",
+    "src/repositories/api-summary-repository.ts": "封装情绪电影到期检查、授权、生成、列表、详情、进度、页面编辑、再生成、感言和删除接口。",
+    "src/repositories/api-vault-repository.ts": "封装 JSON、ZIP、PDF 导出，导入预检与恢复，数据库备份和存储状态。",
+    "src/repositories/api-app-lock-repository.ts": "封装应用锁设置、解锁、验证、立即锁定、改密、恢复和开关。",
+    "src/storage/db.ts": "IndexedDB 适配层，保存仍属浏览器侧的草稿与重要日子，并提供升级和兼容读取。",
+    "src/storage/image-metadata.ts": "读取图片 EXIF 拍摄时间；无时间信息时回退本机当前时间。",
+    "server/src/main.ts": "NestJS 启动入口；配置本机监听、全局前缀、DTO 校验、Cookie/CORS 和端口。",
+    "server/src/app.module.ts": "后端根模块，装配 Prisma、媒体、记忆、主题、长期副本、回声、总结、保险箱和应用锁。",
+    "server/src/health.controller.ts": "公开健康检查，用于确认后端进程可访问。",
+    "server/src/common/config.ts": "集中解析服务端端口、数据根目录、上传目录和环境配置。",
+    "server/src/common/local-security.ts": "限制服务只接受可信 localhost 来源，构成本地应用网络边界。",
+    "server/src/common/local-user.ts": "提供单用户 MVP 的固定本地 userId。",
+    "server/src/prisma/prisma.service.ts": "PrismaClient 生命周期适配，随 Nest 启停建立和释放 PostgreSQL 连接。",
+    "server/src/prisma/prisma.module.ts": "导出全局 PrismaService，供业务模块注入。",
+    "server/src/media/media.service.ts": "验证 MIME 与文件签名、20MB 限制、受控路径写入/读取/删除和上传补偿清理。",
+    "server/src/memories/memories.service.ts": "记忆事务核心；写入字段和主题关系，自动收集长期副本，处理软删除、分页及单条总结排除。",
+    "server/src/topics/topics.service.ts": "主题 CRUD 与同名约束，保存长期副本提示和回声开关。",
+    "server/src/long-term-copies/long-term-copies.service.ts": "长期副本创建、状态流转、历史回填、自动收集和稳定分页时间线。",
+    "server/src/echoes/echo-ranking.ts": "回声候选评分与确定性排序纯函数。",
+    "server/src/echoes/echoes.service.ts": "按上海自然日生成最多三条回声，处理三十天历史、排除、忽略和回声感言。",
+    "server/src/summaries/summaries.service.ts": "情绪电影生命周期核心：幂等生成、快照、故事页持久化、档案、阅读进度、编辑乐观锁、再生成、感言、删除和偏好。",
+    "server/src/summaries/summary-snapshot.service.ts": "按授权冻结月度/年度真实数据，裁剪文字和照片，计算排行、长期副本进度、鼓励文案及 sourceHash。",
+    "server/src/summaries/summary-story.domain.ts": "故事规划纯函数；处理周期键、最高频心情、代表记忆、4/7/12 页结构和稳定鼓励文案。",
+    "server/src/summaries/summary-story.types.ts": "快照、故事计划、页面草稿、事实引用和情绪结果类型。",
+    "server/src/summaries/summary-template.service.ts": "生成可离线使用的第二人称本地旁白，是 AI 关闭或失败时的可信基线。",
+    "server/src/summaries/summary-ai.adapter.ts": "调用兼容 OpenAI Chat Completions 的可选服务；读取服务端环境变量、限制超时并把失败安全降级。",
+    "server/src/summaries/summary-validation.service.ts": "校验 AI 页数、事实引用和数字，拒绝快照外内容，保证旁白不虚构。",
+    "server/src/summaries/summary-copy.ts": "维护鼓励文案等受控产品文案。",
+    "server/src/summaries/summary.domain.ts": "兼容旧版按需统计接口的日期区间与汇总纯函数。",
+    "server/src/summaries/summary.dto.ts": "总结生成、筛选、进度、页面编辑、感言和授权偏好的 DTO 校验。",
+    "server/src/summaries/summaries.controller.ts": "暴露总结和 summary-preferences REST 路由，把本地用户上下文传给服务层。",
+    "server/src/summaries/summaries.module.ts": "注册总结服务、快照、模板、AI 适配器和事实校验器。",
+    "server/src/vault/vault-export.service.ts": "生成版本化 JSON、带原图和 manifest 的 ZIP、中文图文 PDF，并记录缺图警告。",
+    "server/src/vault/vault-import.service.ts": "执行导入预检后的事务恢复、ID 冲突重映射、幂等跳过、照片暂存和失败清理。",
+    "server/src/vault/import-validator.ts": "校验 ZIP Slip、绝对路径、压缩炸弹、清单哈希和关系完整性。",
+    "server/src/vault/export-manifest.ts": "生成导出清单与 SHA-256 校验信息。",
+    "server/src/vault/vault-backup.service.ts": "以参数数组调用 pg_dump，原子写入 custom 备份并记录大小、哈希和脱敏错误。",
+    "server/src/vault/database-url.ts": "安全解析并脱敏 PostgreSQL 连接串，为备份命令构造参数。",
+    "server/src/app-lock/app-lock.service.ts": "应用锁业务：设置、解锁、短期再验证、立即锁定、改密、恢复、限流和会话滑动过期。",
+    "server/src/app-lock/app-lock.crypto.ts": "基于 scrypt、随机盐和 timingSafeEqual 的密码与恢复密钥摘要。",
+    "server/src/app-lock/app-lock.guard.ts": "全局 Guard；锁开启且会话无效时拒绝业务 API，只放行健康和必要锁接口。",
+    "server/prisma/schema.prisma": "PostgreSQL 数据模型总定义，包含记忆、主题、副本、回声、情绪电影、保险箱和应用锁实体及约束。",
+    "server/prisma/seed.ts": "初始化“无、恋爱、考研、读研”等默认主题，使用 upsert 保证重复执行安全。",
+    "server/prisma/migrations/0001_init/migration.sql": "建立媒体、记忆、主题和长期副本的初始表结构。",
+    "server/prisma/migrations/0002_memory_fields_and_copy_policy/migration.sql": "补充记忆字段和长期副本主题授权策略。",
+    "server/prisma/migrations/0003_memory_echo/migration.sql": "新增记忆回声、回声偏好和感言相关表。",
+    "server/prisma/migrations/0004_echo_generation_source_topic/migration.sql": "补充回声生成批次与来源主题，保证每日幂等和可追踪。",
+    "server/prisma/migrations/0005_vault_lock_summary/migration.sql": "新增数据保险箱、应用锁和旧版总结相关结构。",
+    "server/prisma/migrations/0006_emotional_memory_summaries/migration.sql": "新增情绪电影、故事页面、总结感言、隐私偏好和单条记忆排除字段。",
+    "tools/generate_final_docs.py": "从当前代码事实生成 PRD、前后端技术方案和本代码模块说明三份 Word 文档。",
+    "tools/build_prd_v2.py": "早期 PRD 生成脚本，保留用于追溯旧版文档。",
+    "tools/build_backend_doc.py": "早期后端方案文档生成脚本。",
+    "tools/build_backend_v2.py": "第二版后端方案生成脚本。",
+    "tools/build_fullstack_plan.py": "早期前后端技术方案生成脚本。",
+    "package.json": "前端依赖与 dev、build、test、server 快捷脚本。",
+    "server/package.json": "后端 NestJS、Prisma、导入导出和测试依赖及启动脚本。",
+    "vite.config.ts": "Vite/React 配置、/api 到 3001 的本机代理和 Vitest 文件范围。",
+    "tsconfig.json": "前端 TypeScript 工程引用入口。",
+    "tsconfig.app.json": "前端应用 TypeScript 编译选项。",
+    "tsconfig.node.json": "Vite 配置等 Node 侧 TypeScript 编译选项。",
+    "server/tsconfig.json": "NestJS 后端 TypeScript 输出和模块解析配置。",
+    "server/vitest.config.ts": "后端 Vitest 与测试目录配置。",
+    "server/.env.example": "后端环境变量模板；只放占位值，不包含本机密码或 AI 密钥。",
+    "index.html": "Vite 页面壳和 React 挂载节点。",
+    ".gitignore": "排除 node_modules、构建产物、本机环境变量和 D 盘运行数据，避免隐私数据进入 Git。",
+}
+
+
+def source_inventory() -> list[Path]:
+    files: set[Path] = set()
+    for base, patterns in (
+        (ROOT / "src", ("*.ts", "*.tsx", "*.css")),
+        (ROOT / "server" / "src", ("*.ts",)),
+        (ROOT / "server" / "test", ("*.ts",)),
+        (ROOT / "server" / "prisma", ("*.prisma", "*.ts", "*.sql")),
+        (ROOT / "tools", ("*.py",)),
+    ):
+        if base.exists():
+            for pattern in patterns:
+                files.update(path for path in base.rglob(pattern) if path.is_file())
+    for relative in (
+        ".gitignore", "index.html", "package.json", "package-lock.json", "tsconfig.json",
+        "tsconfig.app.json", "tsconfig.node.json", "vite.config.ts", "server/.env.example",
+        "server/package.json", "server/package-lock.json", "server/tsconfig.json", "server/vitest.config.ts",
+    ):
+        path = ROOT / relative
+        if path.exists():
+            files.add(path)
+    return sorted(files, key=lambda path: path.relative_to(ROOT).as_posix().lower())
+
+
+def code_module(relative: str) -> str:
+    if ".test." in relative or relative.startswith("server/test/"):
+        return "自动化测试"
+    if relative.startswith("src/components/"):
+        return "前端组件"
+    if relative.startswith("src/domain/"):
+        return "前端领域"
+    if relative.startswith("src/repositories/") or relative.startswith("src/api/"):
+        return "前端数据访问"
+    if relative.startswith("src/storage/"):
+        return "浏览器存储"
+    if relative.startswith("src/hooks/"):
+        return "前端流程编排"
+    if relative.startswith("src/"):
+        return "前端入口与样式"
+    if relative.startswith("server/src/summaries/"):
+        return "后端·情绪电影"
+    if relative.startswith("server/src/echoes/"):
+        return "后端·记忆回声"
+    if relative.startswith("server/src/app-lock/"):
+        return "后端·应用锁"
+    if relative.startswith("server/src/vault/"):
+        return "后端·数据保险箱"
+    if relative.startswith("server/src/media/") or relative.startswith("server/src/memories/"):
+        return "后端·照片记忆"
+    if relative.startswith("server/src/topics/") or relative.startswith("server/src/long-term-copies/"):
+        return "后端·主题与副本"
+    if relative.startswith("server/src/"):
+        return "后端基础设施"
+    if relative.startswith("server/prisma/migrations/"):
+        return "数据库迁移"
+    if relative.startswith("server/prisma/"):
+        return "数据库模型"
+    if relative.startswith("tools/"):
+        return "文档工具"
+    return "工程配置"
+
+
+def code_description(relative: str) -> str:
+    if relative in FILE_DESCRIPTIONS:
+        return FILE_DESCRIPTIONS[relative]
+    name = Path(relative).name
+    if relative.endswith("package-lock.json"):
+        return "锁定实际安装依赖版本和完整性哈希，保证本机与后续安装结果可复现。"
+    if ".test." in relative or relative.startswith("server/test/"):
+        target = name.replace(".test.tsx", "").replace(".test.ts", "").replace(".spec.ts", "")
+        kind = "端到端接口" if ".e2e." in name else "单元与回归"
+        return f"{target} 的{kind}测试；固定关键输入、成功路径和异常边界，防止功能修改后回归。"
+    if name.endswith(".controller.ts"):
+        return "NestJS 路由层；接收并校验请求，把本地用户上下文和 DTO 交给对应 Service。"
+    if name.endswith(".service.ts"):
+        return "NestJS 业务服务；承载该模块事务、查询、权限边界和响应组装。"
+    if name.endswith(".module.ts"):
+        return "NestJS 依赖注入模块；注册 Controller、Service 及跨模块依赖。"
+    if name.endswith(".dto.ts"):
+        return "class-validator DTO；限制请求字段、枚举、长度和可选性。"
+    if relative.startswith("src/components/"):
+        component = name.rsplit(".", 1)[0]
+        return f"{component} React 组件；渲染对应界面并通过 props 回调把业务动作交回 App 或 Hook。"
+    if relative.startswith("src/test-utils/"):
+        return "前端测试夹具与构造器，减少回声等测试的重复样本代码。"
+    if name == "test-setup.ts":
+        return "前端测试全局初始化，安装 IndexedDB 等浏览器 API 替身。"
+    if name == "vite-env.d.ts":
+        return "声明 Vite 客户端环境类型。"
+    return "项目支撑文件；由所属模块在构建、运行或文档生成阶段使用。"
+
+
+def build_code_map():
+    doc = Document()
+    configure_document(doc)
+    add_cover(doc, "照片记忆本代码模块说明", "逐文件功能分类与实现索引", "V1.0")
+    add_intro(
+        doc,
+        "代码按“前端交互与状态—Repository—NestJS Controller/Service—Prisma/PostgreSQL—D 盘文件系统”分层。情绪电影在既有架构上新增独立领域、前端状态机和后端快照生成链路，没有绕过应用锁或数据边界。",
+        "本文档列出仓库内自有源代码、测试、迁移、配置和文档脚本。node_modules、dist、运行数据和生成后的 Word/图片属于依赖、构建产物或用户数据，不作为自有源代码逐项列出。",
+    )
+    add_figure(doc, FLOW, "从记录、回看、总结到数据保护的业务与代码边界", 6.35)
+    add_contents(doc, ["架构与阅读顺序", "运行时调用链", "前端代码索引", "后端代码索引", "数据库与迁移索引", "自动化测试索引", "工程配置与文档工具", "维护建议"])
+
+    doc.add_heading("1 架构与阅读顺序", level=1)
+    add_table(doc, ["层级", "入口", "实现原则"], [
+        ["前端页面", "src/App.tsx 与 src/components", "组件只负责展示与交互，跨页面流程由 App 和 Hook 编排"],
+        ["前端领域", "src/domain 与 src/app-state.ts", "纯类型、纯函数和 reducer 可独立测试"],
+        ["前端数据访问", "src/repositories 与 src/api/client.ts", "页面不直接拼接 URL；统一错误、Cookie 和锁屏处理"],
+        ["后端接口", "server/src/*/*.controller.ts", "Controller 只做 HTTP 边界和 DTO，业务规则进入 Service"],
+        ["后端业务", "server/src/*/*.service.ts", "事务、幂等、授权、文件安全和响应裁剪集中在服务层"],
+        ["持久化", "server/prisma", "关系和唯一约束由 PostgreSQL 保证，演进通过 migration 落地"],
+    ], [1.35, 2.25, 3.45])
+    doc.add_heading("2 运行时调用链", level=1)
+    add_numbered(doc, [
+        "用户在 React 组件触发操作，App 或 useMemorySummaries 组织完整业务流程。",
+        "Repository 通过 ApiClient 访问 /api，并携带 HttpOnly 应用锁会话 Cookie。",
+        "NestJS Controller 使用 DTO 校验输入；AppLockGuard 在业务路由前检查会话。",
+        "Service 执行业务规则和 Prisma 事务；图片、导出和备份通过受控 D 盘路径读写。",
+        "Prisma 将结构化数据写入 PostgreSQL；Controller 仅返回公开 DTO，不暴露 storagePath、sourceSnapshot 或密钥。",
+    ])
+
+    files = source_inventory()
+    grouped: dict[str, list[list[str]]] = {}
+    for path in files:
+        relative = path.relative_to(ROOT).as_posix()
+        grouped.setdefault(code_module(relative), []).append([relative, code_module(relative), code_description(relative)])
+
+    section_groups = [
+        ("3 前端代码索引", ("前端入口与样式", "前端组件", "前端流程编排", "前端领域", "前端数据访问", "浏览器存储")),
+        ("4 后端代码索引", ("后端基础设施", "后端·照片记忆", "后端·主题与副本", "后端·记忆回声", "后端·情绪电影", "后端·数据保险箱", "后端·应用锁")),
+        ("5 数据库与迁移索引", ("数据库模型", "数据库迁移")),
+        ("6 自动化测试索引", ("自动化测试",)),
+        ("7 工程配置与文档工具", ("工程配置", "文档工具")),
+    ]
+    code_rows_per_page = 6
+    for heading, modules in section_groups:
+        section_started = False
+        for module in modules:
+            rows = grouped.get(module, [])
+            if not rows:
+                continue
+            for chunk_index in range(0, len(rows), code_rows_per_page):
+                add_page_start(doc)
+                starts_section = not section_started
+                if starts_section:
+                    section_heading = doc.add_heading(heading, level=1)
+                    section_started = True
+                continuation = "（续）" if chunk_index else ""
+                module_heading = doc.add_heading(f"{module}{continuation}", level=2)
+                add_table(
+                    doc,
+                    ["文件", "对应模块", "实现方式"],
+                    rows[chunk_index:chunk_index + code_rows_per_page],
+                    [2.45, 1.25, 3.25],
+                )
+
+    add_page_start(doc)
+    doc.add_heading("8 维护建议", level=1)
+    add_bullets(doc, [
+        "新增用户功能时，先补领域规则和失败测试，再接 Repository、Service、Controller 和组件，避免把业务判断堆进页面。",
+        "修改 Prisma schema 时必须新增 migration，禁止只运行 db push；生产前执行 migrate deploy。",
+        "情绪电影新增页面类型时，需要同步更新故事类型、计划、模板、AI 校验、前端渲染和端到端测试。",
+        "任何导出、导入、备份或 AI 改动都要复核应用锁、路径限制、敏感字段裁剪和失败回退。",
+        "交付前固定执行前端测试与构建、后端测试与构建、Prisma validate，以及 Word 文档逐页渲染检查。",
+    ])
+    doc.add_paragraph(f"本次索引共覆盖 {len(files)} 个仓库自有代码与配置文件。")
+    doc.save(CODEMAP)
 
 
 if __name__ == "__main__":
     DOCS.mkdir(parents=True, exist_ok=True)
     build_prd()
     build_tech()
+    build_code_map()
     print(PRD)
     print(TECH)
+    print(CODEMAP)

@@ -9,4 +9,10 @@ describe('HomeView', () => {
     expect(html).toContain('来自三年前的问候');
     expect(html.indexOf('来自三年前的问候')).toBeLessThan(html.indexOf('所有记忆'));
   });
+
+  it('shows the emotional-summary reminder above the memory toolbar', () => {
+    const html = renderToStaticMarkup(<HomeView imageUrls={{}} memories={[]} onAdd={() => undefined} onQueryChange={() => undefined} onSelect={() => undefined} query="" summaryCard={<aside>上个月的月度总结已经生成好了</aside>} />);
+    expect(html.indexOf('上个月的月度总结已经生成好了')).toBeGreaterThan(-1);
+    expect(html.indexOf('上个月的月度总结已经生成好了')).toBeLessThan(html.indexOf('所有记忆'));
+  });
 });

@@ -28,9 +28,14 @@ import { MemoryEchoCard } from './components/MemoryEchoCard';
 import { EchoDisabledCard, MemoryEchoPage, nextEchoIndex } from './components/MemoryEchoPage';
 import { EchoReflectionEditor } from './components/EchoReflectionEditor';
 import { EchoSettingsPanel } from './components/EchoSettingsPanel';
-import type { MemorySummary, SummaryPeriod } from './domain/memory-summary';
+import { nextReadablePage, type SummaryPreference } from './domain/memory-summary';
 import { ApiSummaryRepository } from './repositories/api-summary-repository';
-import { MemorySummaryPage } from './components/MemorySummaryPage';
+import { SummaryReminderCard } from './components/SummaryReminderCard';
+import { SummaryArchivePage } from './components/SummaryArchivePage';
+import { SummaryStoryPlayer } from './components/SummaryStoryPlayer';
+import { SummaryStoryEditor } from './components/SummaryStoryEditor';
+import { SummaryReflectionEditor } from './components/SummaryReflectionEditor';
+import { useMemorySummaries } from './hooks/use-memory-summaries';
 import type { AppLockStatus } from './domain/data-vault';
 import { ApiAppLockRepository } from './repositories/api-app-lock-repository';
 import { ApiVaultRepository } from './repositories/api-vault-repository';
@@ -46,6 +51,8 @@ export const APP_NAV_ITEMS = [
   { view: 'copies', label: '长期副本', icon: '◌' },
   { view: 'important', label: '重要日子', icon: '♡' },
 ] as const;
+
+export const APP_SUMMARY_ENTRY_LABEL = '情绪电影';
 
 function readList(key: string): string[] {
   try {
@@ -90,14 +97,10 @@ export default function App() {
   const [reflectionEcho, setReflectionEcho] = useState<MemoryEcho>();
   const [echoSettingsOpen, setEchoSettingsOpen] = useState(false);
   const [selectedReflections, setSelectedReflections] = useState<EchoReflection[]>([]);
-  const [summaryPeriod, setSummaryPeriod] = useState<SummaryPeriod>('month');
-  const [summaryDate, setSummaryDate] = useState(() => new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10));
-  const [memorySummary, setMemorySummary] = useState<MemorySummary>();
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summaryError, setSummaryError] = useState('');
   const [lockStatus, setLockStatus] = useState<AppLockStatus>();
   const [lockSkipped, setLockSkipped] = useState(false);
   const accessReady = !!lockStatus && (lockSkipped || !lockStatus.configured || !lockStatus.enabled || !lockStatus.locked);
+  const summaryFlow = useMemorySummaries(summaryRepository, accessReady && !state.loading);
 
   useEffect(() => {
     let active = true;
@@ -174,15 +177,14 @@ export default function App() {
     try { setEchoHistory(await echoRepository.list(30)); } catch { setEchoError('最近的回声读取失败，请稍后重试。'); }
   }
 
-  async function openSummary(period: SummaryPeriod = summaryPeriod, date = summaryDate) {
+  async function openSummaryArchive() {
     setView('summary');
-    setSummaryPeriod(period);
-    setSummaryDate(date);
-    setSummaryLoading(true);
-    setSummaryError('');
-    try { setMemorySummary(await summaryRepository.get(period, date)); }
-    catch { setMemorySummary(undefined); setSummaryError('记忆总结暂时无法生成，请确认后端已连接。'); }
-    finally { setSummaryLoading(false); }
+    await summaryFlow.loadArchive(summaryFlow.filter);
+  }
+
+  async function openStorySummary(id: string) {
+    setView('summary');
+    await summaryFlow.openSummary(id);
   }
 
   async function saveReflection(text: string) {
@@ -361,12 +363,23 @@ export default function App() {
       <header className="topbar"><button className="brand" onClick={() => { setView('home'); setQuery(''); }} type="button"><span className="brand-mark">✦</span><span>照片记忆本<small>PHOTO MEMORY</small></span></button><div className="topbar-tools"><div className="topbar-note">安全保存到你的本地数据库</div><button className="vault-entry" onClick={() => setView('vault')} type="button"><span>◇</span> 数据保险箱</button></div><button className="mobile-add" onClick={() => setEditor('new')} type="button">＋</button></header>
       <main className="main-content">
         {state.error && <div className="error-banner">{state.error}</div>}
-        {view === 'home' && <HomeView echoCard={<section className="home-echo-section">{!echoPreference.enabled ? <EchoDisabledCard onOpenHistory={() => void openEchoPage()} onOpenSettings={() => setEchoSettingsOpen(true)} /> : echoLoading ? <div className="home-echo-status">正在听取今天的记忆回声…</div> : echoError ? <div className="home-echo-status is-error"><p>{echoError}</p><button className="text-button" onClick={() => void loadTodayEchoes()} type="button">重试</button></div> : currentEcho ? <MemoryEchoCard echo={currentEcho} index={echoIndex} onDismiss={(echo) => void dismissCurrentEcho(echo)} onExclude={(memory) => void excludeEchoMemory(memory)} onNext={() => setEchoIndex(nextEchoIndex(echoIndex, todayEchoes))} onOpen={(id) => dispatch({ type: 'selected', id })} onOpenAll={() => void openEchoPage()} onReflect={setReflectionEcho} onDisableTopic={(topic) => void disableEchoTopic(topic)} sectionLabel="记忆回声" total={todayEchoes.filter((echo) => echo.status === 'ACTIVE').length} /> : <div className="home-echo-status"><strong>过去的记忆还在慢慢积累</strong><p>保存满 30 天后，它们会在合适的时候回来。</p><button className="text-button" onClick={() => void openEchoPage()} type="button">查看回声记录</button></div>}</section>} summaryCard={<section className="home-summary-card"><div><span className="section-kicker">MEMORY REVIEW</span><h2>这一段时间，留下了什么？</h2><p>从真实照片、心情、主题与长期副本中生成月度或年度回顾。</p></div><div><button className="secondary-button" onClick={() => void openSummary('month')} type="button">查看月度总结</button><button className="text-button" onClick={() => void openSummary('year')} type="button">年度总结</button></div></section>} imageUrls={imageUrls} memories={state.memories} onAdd={() => setEditor('new')} onQueryChange={setQuery} onSelect={(id) => dispatch({ type: 'selected', id })} query={query} />}
+        {view === 'home' && <HomeView
+          echoCard={<section className="home-echo-section">{!echoPreference.enabled ? <EchoDisabledCard onOpenHistory={() => void openEchoPage()} onOpenSettings={() => setEchoSettingsOpen(true)} /> : echoLoading ? <div className="home-echo-status">正在听取今天的记忆回声…</div> : echoError ? <div className="home-echo-status is-error"><p>{echoError}</p><button className="text-button" onClick={() => void loadTodayEchoes()} type="button">重试</button></div> : currentEcho ? <MemoryEchoCard echo={currentEcho} index={echoIndex} onDismiss={(echo) => void dismissCurrentEcho(echo)} onExclude={(memory) => void excludeEchoMemory(memory)} onNext={() => setEchoIndex(nextEchoIndex(echoIndex, todayEchoes))} onOpen={(id) => dispatch({ type: 'selected', id })} onOpenAll={() => void openEchoPage()} onReflect={setReflectionEcho} onDisableTopic={(topic) => void disableEchoTopic(topic)} sectionLabel="记忆回声" total={todayEchoes.filter((echo) => echo.status === 'ACTIVE').length} /> : <div className="home-echo-status"><strong>过去的记忆还在慢慢积累</strong><p>保存满 30 天后，它们会在合适的时候回来。</p><button className="text-button" onClick={() => void openEchoPage()} type="button">查看回声记录</button></div>}</section>}
+          summaryCard={summaryFlow.dueResult && !summaryFlow.reminderDismissed && summaryFlow.dueResult.due.length > 0
+            ? <SummaryReminderCard due={summaryFlow.dueResult.due} onLater={summaryFlow.dismissReminder} onOpen={(id) => void openStorySummary(id)} />
+            : <section className="home-summary-card"><div><span className="section-kicker">YOUR EMOTION FILM</span><h2>把这一段生活，放成一部情绪电影</h2><p>从真实照片、心情、主题与长期副本中生成并永久保存月度或年度回顾。</p></div><div><button className="secondary-button" onClick={() => summaryFlow.dueResult?.needsConsent ? summaryFlow.openConsent() : void openSummaryArchive()} type="button">打开情绪电影档案馆</button></div></section>}
+          imageUrls={imageUrls}
+          memories={state.memories}
+          onAdd={() => setEditor('new')}
+          onQueryChange={setQuery}
+          onSelect={(id) => dispatch({ type: 'selected', id })}
+          query={query}
+        />}
         {view === 'timeline' && <Timeline memories={state.memories} imageUrls={imageUrls} onSelect={(id) => dispatch({ type: 'selected', id })} />}
         {view === 'important' && <ImportantDaysView days={importantDays} imageUrls={imageUrls} memories={state.memories} onCreate={createImportantDay} onDelete={deleteImportantDay} onSelectMemory={(id) => dispatch({ type: 'selected', id })} onUpdate={updateImportantDay} />}
         {view === 'copies' && (selectedCopyId ? <LongTermCopyTimeline copyId={selectedCopyId} onBack={() => setSelectedCopyId(undefined)} repository={copyRepository} /> : <LongTermCopiesView copies={longTermCopies} onCreate={createLongTermCopy} onSelect={setSelectedCopyId} onToggleAutoCollect={toggleCopyAutoCollect} topics={topics} />)}
         {view === 'echo' && <MemoryEchoPage history={echoHistory} onBack={() => setView('home')} onDismiss={(echo) => void dismissCurrentEcho(echo)} onExclude={(memory) => void excludeEchoMemory(memory)} onOpen={(id) => dispatch({ type: 'selected', id })} onOpenSettings={() => setEchoSettingsOpen(true)} onReflect={setReflectionEcho} onDisableTopic={(topic) => void disableEchoTopic(topic)} today={todayEchoes} />}
-        {view === 'summary' && <MemorySummaryPage date={summaryDate} error={summaryError} loading={summaryLoading} onBack={() => setView('home')} onDateChange={(date) => void openSummary(summaryPeriod, date)} onOpenMemory={(id) => dispatch({ type: 'selected', id })} onPeriodChange={(period) => void openSummary(period, summaryDate)} period={summaryPeriod} summary={memorySummary} />}
+        {view === 'summary' && <>{summaryFlow.error && <div className="error-banner">{summaryFlow.error}</div>}{summaryFlow.loading && <div className="summary-status">正在整理情绪电影档案…</div>}<SummaryArchivePage filter={summaryFlow.filter} onBack={() => setView('home')} onFilterChange={(filter) => void summaryFlow.loadArchive(filter)} onOpen={(id) => void openStorySummary(id)} reflections={summaryFlow.reflections} summaries={summaryFlow.summaries} /></>}
         {view === 'vault' && <DataVaultPage appLockRepository={appLockRepository} lockStatus={lockStatus} onBack={() => setView('home')} onLockStatusChange={(next) => { setLockStatus(next); if (next.configured) setLockSkipped(false); }} repository={vaultRepository} />}
       </main>
       <nav className="bottom-nav"><button className={view === 'home' ? 'active' : ''} onClick={() => setView('home')} type="button"><span>▦</span>记忆</button><button className={view === 'timeline' ? 'active' : ''} onClick={() => setView('timeline')} type="button"><span>☷</span>时间线</button><button className={view === 'copies' ? 'active' : ''} onClick={() => { setView('copies'); setSelectedCopyId(undefined); }} type="button"><span>◌</span>长期副本</button><button className={view === 'important' ? 'active' : ''} onClick={() => setView('important')} type="button"><span>♡</span>重要日子</button></nav>
@@ -376,7 +389,40 @@ export default function App() {
       {policyRequest && <LongTermCopyDecisionDialog candidates={policyRequest.candidates} onCancel={() => { policyRequest.reject(new Error('已取消保存')); setPolicyRequest(undefined); }} onConfirm={async (decisions) => { const request = policyRequest; setPolicyRequest(undefined); request.resolve(decisions); }} />}
       {reflectionEcho && <EchoReflectionEditor echo={reflectionEcho} onCancel={() => setReflectionEcho(undefined)} onSave={saveReflection} />}
       {echoSettingsOpen && <EchoSettingsPanel availableMoods={Array.from(new Set([...DEFAULT_MOODS, ...customMoods, ...state.memories.map((memory) => memory.mood).filter(Boolean), ...echoPreference.excludedMoods]))} disabledTopics={topics.filter((topic) => topic.echoEnabled === false)} excludedMemories={state.memories.filter((memory) => memory.echoExcluded)} onClose={() => setEchoSettingsOpen(false)} onRestoreMemory={restoreEchoMemory} onRestoreTopic={restoreEchoTopic} onSave={saveEchoPreferences} preference={echoPreference} />}
+      {summaryFlow.consentOpen && <SummaryConsentDialog onCancel={summaryFlow.closeConsent} onConfirm={(input) => void summaryFlow.confirmConsent(input)} />}
+      {summaryFlow.active && summaryFlow.mode === 'player' && <SummaryStoryPlayer initialPage={nextReadablePage(summaryFlow.active)} onClose={() => summaryFlow.setMode('archive')} onEdit={() => summaryFlow.setMode('editor')} onProgress={summaryFlow.saveProgress} onReflect={() => summaryFlow.setMode('reflection')} summary={summaryFlow.active} />}
+      {summaryFlow.active && summaryFlow.mode === 'editor' && <SummaryStoryEditor
+        onClose={() => summaryFlow.setMode('player')}
+        onRegenerate={summaryFlow.regenerate}
+        onReorder={summaryFlow.reorderPage}
+        onSavePage={(pageId, input) => summaryFlow.savePage(pageId, { narration: input.narration, payload: input.payload })}
+        summary={summaryFlow.active}
+      />}
+      {summaryFlow.active && summaryFlow.mode === 'reflection' && <SummaryReflectionEditor initialText={summaryFlow.active.reflection?.text ?? ''} onCancel={() => summaryFlow.setMode('player')} onSave={summaryFlow.saveReflection} summary={summaryFlow.active} />}
       <Toast message={toast} />
+    </div>
+  );
+}
+
+type SummaryConsentInput = Pick<SummaryPreference, 'allowText' | 'allowPhotos' | 'allowCloudAi'> & { reviewed: true };
+
+export function SummaryConsentDialog({ onConfirm, onCancel }: { onConfirm: (input: SummaryConsentInput) => void; onCancel: () => void }) {
+  const [allowText, setAllowText] = useState(true);
+  const [allowPhotos, setAllowPhotos] = useState(true);
+  const [allowCloudAi, setAllowCloudAi] = useState(false);
+  return (
+    <div className="modal-backdrop summary-consent-backdrop" role="presentation">
+      <section aria-labelledby="summary-consent-title" aria-modal="true" className="summary-consent-dialog" role="dialog">
+        <span className="eyebrow">BEFORE YOUR FIRST FILM</span>
+        <h2 id="summary-consent-title">生成总结前，请先确认授权</h2>
+        <p>总结只读取你允许的本地记忆。关闭文字或照片后，对应内容不会进入快照，也不会发送给云端 AI。</p>
+        <div className="summary-consent-options">
+          <label><span><strong>允许使用文字</strong><small>标题和备忘录会用于挑选代表片段与撰写旁白</small></span><input checked={allowText} onChange={(event) => setAllowText(event.target.checked)} type="checkbox" /></label>
+          <label><span><strong>允许使用照片</strong><small>代表照片会用于情绪电影画面</small></span><input checked={allowPhotos} onChange={(event) => setAllowPhotos(event.target.checked)} type="checkbox" /></label>
+          <label><span><strong>使用云端 AI</strong><small>仅发送以上授权范围内的结构化事实；关闭时使用本地模板</small></span><input checked={allowCloudAi} onChange={(event) => setAllowCloudAi(event.target.checked)} type="checkbox" /></label>
+        </div>
+        <div className="dialog-actions"><button onClick={onCancel} type="button">暂不生成</button><button className="primary-button" onClick={() => onConfirm({ reviewed: true, allowText, allowPhotos, allowCloudAi })} type="button">确认并生成</button></div>
+      </section>
     </div>
   );
 }

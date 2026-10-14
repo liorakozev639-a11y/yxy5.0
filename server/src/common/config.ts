@@ -43,3 +43,24 @@ export const serverConfig = {
   databaseUrl: process.env.DATABASE_URL ?? '',
   uploadDir: getVaultPaths().uploads,
 };
+
+export interface SummaryAiConfig {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  timeoutMs: number;
+}
+
+export function getSummaryAiConfig(): SummaryAiConfig {
+  return {
+    baseUrl: (process.env.SUMMARY_AI_BASE_URL ?? '').replace(/\/$/, ''),
+    apiKey: process.env.SUMMARY_AI_API_KEY ?? '',
+    model: process.env.SUMMARY_AI_MODEL ?? '',
+    timeoutMs: positiveInteger(process.env.SUMMARY_AI_TIMEOUT_MS, 15000),
+  };
+}
+
+function positiveInteger(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}

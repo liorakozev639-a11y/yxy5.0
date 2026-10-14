@@ -65,3 +65,23 @@ export interface LeadMoodResult {
   count: number;
   latestAt: string;
 }
+
+export interface SummaryAiInput {
+  snapshot: SummarySnapshot;
+  pages: SummaryPageDraft[];
+}
+
+export interface SummaryAiPage {
+  pageType: SummaryPageType;
+  displayOrder: number;
+  narration: string;
+  factRefs: string[];
+}
+
+export interface SummaryAiSuccess {
+  ok: true;
+  pages: SummaryAiPage[];
+}
+
+export type SummaryAiFailureReason = 'UNAVAILABLE' | 'TIMEOUT' | 'REMOTE_ERROR' | 'INVALID_RESPONSE' | 'PAGE_STRUCTURE' | 'UNKNOWN_FACT' | 'UNKNOWN_NUMBER';
+export type SummaryAiResult = SummaryAiSuccess | { ok: false; reason: SummaryAiFailureReason };

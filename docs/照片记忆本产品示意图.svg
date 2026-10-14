@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1270" viewBox="0 0 1680 1270">
+<rect width="1680" height="1270" fill="#f7f4ee"/>
+<text x="60" y="77" font-family="Microsoft YaHei, sans-serif" font-size="42" font-weight="700" text-anchor="start" fill="#253c37">照片记忆本产品示意图</text>
+<text x="60" y="121" font-family="Microsoft YaHei, sans-serif" font-size="23" font-weight="400" text-anchor="start" fill="#65776f">当前网页 MVP · 关键页面与功能入口 · 界面结构示意，图片和内容均为示例</text>
+<text x="55" y="196" font-family="Microsoft YaHei, sans-serif" font-size="26" font-weight="700" text-anchor="start" fill="#253c37">01 记忆首页</text>
+<rect x="55" y="215" width="510" height="440" rx="18" fill="#fffdfa" stroke="#d8e2db"/>
+<text x="77" y="254" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="700" text-anchor="start" fill="#253c37">照片记忆本</text>
+<text x="420" y="253" font-family="Microsoft YaHei, sans-serif" font-size="15" font-weight="400" text-anchor="start" fill="#65776f">本地保存</text>
+<rect x="77" y="275" width="466" height="62" rx="16" fill="#eaf3ef" stroke="#d8e2db"/>
+<text x="91" y="304" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="700" text-anchor="start" fill="#253c37">上个月的月度总结已经生成好了</text>
+<text x="91" y="328" font-family="Microsoft YaHei, sans-serif" font-size="16" font-weight="400" text-anchor="start" fill="#538780">现在查看情绪电影</text>
+<text x="77" y="370" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#65776f">关键词搜索                         ＋ 添加照片</text>
+<rect x="77" y="387" width="145" height="124" rx="10" fill="#c9dbd1" stroke="#c9dbd1"/>
+<rect x="89" y="461.4" width="121" height="32.24" rx="7" fill="#8ca79a" stroke="#8ca79a"/>
+<text x="149.5" y="436.24" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="middle" fill="#8ca79a">照片</text>
+<text x="77" y="539" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#253c37">周末散步</text>
+<text x="77" y="564" font-family="Microsoft YaHei, sans-serif" font-size="15" font-weight="400" text-anchor="start" fill="#65776f">示例日期 · 心情</text>
+<rect x="235" y="387" width="145" height="124" rx="10" fill="#dfd1bb" stroke="#dfd1bb"/>
+<rect x="247" y="461.4" width="121" height="32.24" rx="7" fill="#b69b7c" stroke="#b69b7c"/>
+<text x="307.5" y="436.24" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="middle" fill="#b69b7c">照片</text>
+<text x="235" y="539" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#253c37">认真学习</text>
+<text x="235" y="564" font-family="Microsoft YaHei, sans-serif" font-size="15" font-weight="400" text-anchor="start" fill="#65776f">示例日期 · 心情</text>
+<rect x="393" y="387" width="145" height="124" rx="10" fill="#cad6e3" stroke="#cad6e3"/>
+<rect x="405" y="461.4" width="121" height="32.24" rx="7" fill="#8d9fad" stroke="#8d9fad"/>
+<text x="465.5" y="436.24" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="middle" fill="#8d9fad">照片</text>
+<text x="393" y="539" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#253c37">平常的一天</text>
+<text x="393" y="564" font-family="Microsoft YaHei, sans-serif" font-size="15" font-weight="400" text-anchor="start" fill="#65776f">示例日期 · 心情</text>
+<text x="77" y="617" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="400" text-anchor="start" fill="#538780">记忆     时间线     长期副本     重要日子</text>
+<text x="605" y="196" font-family="Microsoft YaHei, sans-serif" font-size="26" font-weight="700" text-anchor="start" fill="#253c37">02 记录与批量导入</text>
+<rect x="605" y="215" width="510" height="440" rx="18" fill="#fffdfa" stroke="#d8e2db"/>
+<text x="627" y="254" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="700" text-anchor="start" fill="#253c37">照片记忆本</text>
+<text x="970" y="253" font-family="Microsoft YaHei, sans-serif" font-size="15" font-weight="400" text-anchor="start" fill="#65776f">本地保存</text>
+<rect x="627" y="275" width="115" height="90" rx="10" fill="#c9dbd1" stroke="#c9dbd1"/>
+<rect x="639" y="329.0" width="91" height="23.400000000000002" rx="7" fill="#8ca79a" stroke="#8ca79a"/>
+<text x="684.5" y="315.4" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="middle" fill="#8ca79a">照片</text>
+<text x="759" y="298" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#65776f">事件时间  可手动修改</text>
+<text x="759" y="334" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#65776f">标题与备忘录  可稍后补充</text>
+<text x="627" y="401" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="700" text-anchor="start" fill="#253c37">今日心情</text>
+<rect x="627" y="412" width="66" height="34" rx="17" fill="#eaf3ef" stroke="#538780"/>
+<text x="660.0" y="435" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="middle" fill="#538780">开心</text>
+<rect x="719" y="412" width="66" height="34" rx="17" fill="#fbfaf7" stroke="#d8e2db"/>
+<text x="752.0" y="435" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="middle" fill="#65776f">平静</text>
+<rect x="811" y="412" width="84" height="34" rx="17" fill="#fbfaf7" stroke="#d8e2db"/>
+<text x="853.0" y="435" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="middle" fill="#65776f">自定义</text>
+<text x="627" y="477" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#253c37">当日状态  散步 · 学习 · 自定义</text>
+<text x="627" y="514" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#253c37">当日主题  无 · 恋爱 · 考研 · 读研</text>
+<text x="627" y="552" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#538780">选择多张图片 → 询问是否统一主题</text>
+<text x="627" y="583" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#65776f">批量只存照片、时间与可选统一主题</text>
+<rect x="897" y="597" width="196" height="38" rx="18" fill="#538780" stroke="#538780"/>
+<text x="995.0" y="622" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="white">保存这段记忆</text>
+<text x="1155" y="196" font-family="Microsoft YaHei, sans-serif" font-size="26" font-weight="700" text-anchor="start" fill="#253c37">03 我的长期副本</text>
+<rect x="1155" y="215" width="510" height="440" rx="18" fill="#fffdfa" stroke="#d8e2db"/>
+<text x="1177" y="254" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="700" text-anchor="start" fill="#253c37">照片记忆本</text>
+<text x="1520" y="253" font-family="Microsoft YaHei, sans-serif" font-size="15" font-weight="400" text-anchor="start" fill="#65776f">本地保存</text>
+<text x="1177" y="295" font-family="Microsoft YaHei, sans-serif" font-size="20" font-weight="400" text-anchor="start" fill="#253c37">长期的事情，也值得慢慢记录。</text>
+<rect x="1487" y="320" width="156" height="38" rx="18" fill="#538780" stroke="#538780"/>
+<text x="1565.0" y="345" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="white">创建长期副本</text>
+<rect x="1177" y="380" width="466" height="156" rx="16" fill="#eaf3ef" stroke="#d8e2db"/>
+<text x="1194" y="420" font-family="Microsoft YaHei, sans-serif" font-size="23" font-weight="700" text-anchor="start" fill="#253c37">考研这段日子</text>
+<text x="1194" y="457" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#65776f">关联主题  考研</text>
+<text x="1194" y="491" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#538780">自动收集以后新增的同主题记忆</text>
+<text x="1194" y="522" font-family="Microsoft YaHei, sans-serif" font-size="16" font-weight="400" text-anchor="start" fill="#65776f">点击进入按发生时间排列的照片轴</text>
+<text x="1177" y="580" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#65776f">新建主题后，关联主题选项同步更新</text>
+<text x="1177" y="615" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#65776f">无副本时显示空态，由用户自行创建</text>
+<text x="55" y="721" font-family="Microsoft YaHei, sans-serif" font-size="26" font-weight="700" text-anchor="start" fill="#253c37">04 记忆回声</text>
+<rect x="55" y="740" width="510" height="440" rx="18" fill="#fffdfa" stroke="#d8e2db"/>
+<text x="77" y="779" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="700" text-anchor="start" fill="#253c37">照片记忆本</text>
+<text x="420" y="778" font-family="Microsoft YaHei, sans-serif" font-size="15" font-weight="400" text-anchor="start" fill="#65776f">本地保存</text>
+<rect x="77" y="800" width="180" height="208" rx="10" fill="#dfd1bb" stroke="#dfd1bb"/>
+<rect x="89" y="924.8" width="156" height="54.08" rx="7" fill="#b69b7c" stroke="#b69b7c"/>
+<text x="167.0" y="871.08" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="middle" fill="#b69b7c">照片</text>
+<text x="275" y="825" font-family="Microsoft YaHei, sans-serif" font-size="22" font-weight="700" text-anchor="start" fill="#253c37">今天的记忆回声</text>
+<text x="275" y="866" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#65776f">那年今日</text>
+<text x="275" y="904" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#65776f">旧时光在今天回来</text>
+<text x="275" y="942" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#65776f">每天最多 3 条</text>
+<text x="275" y="992" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#538780">查看原记忆</text>
+<rect x="77" y="1037" width="148" height="38" rx="18" fill="#538780" stroke="#538780"/>
+<text x="151.0" y="1062" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="white">写下感言</text>
+<rect x="239" y="1037" width="142" height="38" rx="18" fill="#fbfaf7" stroke="#d8e2db"/>
+<text x="310.0" y="1062" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="middle" fill="#538780">忽略这条</text>
+<text x="77" y="1116" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#65776f">最近 30 天回声记录</text>
+<text x="77" y="1150" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#65776f">用户可控制心情、主题与记忆排除</text>
+<text x="605" y="721" font-family="Microsoft YaHei, sans-serif" font-size="26" font-weight="700" text-anchor="start" fill="#253c37">05 情绪电影</text>
+<rect x="605" y="740" width="510" height="440" rx="18" fill="#fffdfa" stroke="#d8e2db"/>
+<text x="627" y="779" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="700" text-anchor="start" fill="#253c37">照片记忆本</text>
+<text x="970" y="778" font-family="Microsoft YaHei, sans-serif" font-size="15" font-weight="400" text-anchor="start" fill="#65776f">本地保存</text>
+<text x="627" y="823" font-family="Microsoft YaHei, sans-serif" font-size="23" font-weight="700" text-anchor="start" fill="#253c37">情绪电影档案馆</text>
+<rect x="627" y="845" width="102" height="34" rx="17" fill="#eaf3ef" stroke="#538780"/>
+<text x="678.0" y="868" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="middle" fill="#538780">月度总结</text>
+<rect x="759" y="845" width="102" height="34" rx="17" fill="#fbfaf7" stroke="#d8e2db"/>
+<text x="810.0" y="868" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="middle" fill="#65776f">年度总结</text>
+<rect x="627" y="899" width="466" height="139" rx="16" fill="#293f3c" stroke="#293f3c"/>
+<text x="647" y="942" font-family="Microsoft YaHei, sans-serif" font-size="26" font-weight="700" text-anchor="start" fill="#f6f1e4">你的九月记忆</text>
+<text x="647" y="983" font-family="Microsoft YaHei, sans-serif" font-size="18" font-weight="400" text-anchor="start" fill="#dce6de">你认真留下的日子，都值得回看。</text>
+<text x="647" y="1018" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#c5d8d0">未读  ·  从上次页面继续</text>
+<text x="627" y="1082" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#65776f">逐页播放 · 第二人称旁白 · 阅读进度</text>
+<text x="627" y="1115" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#65776f">编辑旁白、照片和页序 · 重新生成</text>
+<text x="627" y="1148" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#65776f">保存回声感言 · 本地模板与授权 AI</text>
+<text x="1155" y="721" font-family="Microsoft YaHei, sans-serif" font-size="26" font-weight="700" text-anchor="start" fill="#253c37">06 数据保险箱</text>
+<rect x="1155" y="740" width="510" height="440" rx="18" fill="#fffdfa" stroke="#d8e2db"/>
+<text x="1177" y="779" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="700" text-anchor="start" fill="#253c37">照片记忆本</text>
+<text x="1520" y="778" font-family="Microsoft YaHei, sans-serif" font-size="15" font-weight="400" text-anchor="start" fill="#65776f">本地保存</text>
+<text x="1177" y="821" font-family="Microsoft YaHei, sans-serif" font-size="21" font-weight="700" text-anchor="start" fill="#253c37">照片与文字，由你自己掌控</text>
+<rect x="1177" y="849" width="140" height="38" rx="18" fill="#fbfaf7" stroke="#d8e2db"/>
+<text x="1247.0" y="874" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="middle" fill="#538780">导出 JSON</text>
+<rect x="1332" y="849" width="140" height="38" rx="18" fill="#538780" stroke="#538780"/>
+<text x="1402.0" y="874" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="700" text-anchor="middle" fill="white">导出 ZIP</text>
+<rect x="1487" y="849" width="140" height="38" rx="18" fill="#fbfaf7" stroke="#d8e2db"/>
+<text x="1557.0" y="874" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="middle" fill="#538780">导出 PDF</text>
+<rect x="1177" y="909" width="466" height="76" rx="16" fill="#eaf3ef" stroke="#d8e2db"/>
+<text x="1191" y="940" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="700" text-anchor="start" fill="#253c37">导入恢复</text>
+<text x="1191" y="970" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#65776f">选择文件 → 预检预览 → 确认安全合并</text>
+<text x="1177" y="1028" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#65776f">数据库备份  创建备份并查看最近状态</text>
+<text x="1177" y="1067" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#65776f">照片存储位置  D:\yxy5.0\data\uploads</text>
+<text x="1177" y="1106" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#65776f">应用锁  独立密码、自动锁定与恢复密钥</text>
+<text x="1177" y="1152" font-family="Microsoft YaHei, sans-serif" font-size="17" font-weight="400" text-anchor="start" fill="#538780">重要操作开启保护后需要再次验证</text>
+<text x="60" y="1252" font-family="Microsoft YaHei, sans-serif" font-size="20" font-weight="400" text-anchor="start" fill="#65776f">说明  时间线与重要日子从主导航进入；主题用于长期副本；记忆回声与情绪电影分别保存各自感言。</text>
+</svg>

@@ -11,12 +11,14 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Inches, Pt, RGBColor
+from generate_product_visuals import build_visuals
 
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 FLOW = DOCS / "照片记忆本业务逻辑流程图.png"
 MOCKUP = DOCS / "照片记忆本产品示意图.png"
+SUMMARY_FLOW = DOCS / "照片记忆本情绪电影流程图.png"
 PRD = DOCS / "照片记忆本产品需求文档_PRD_V2.docx"
 TECH = DOCS / "照片记忆本前后端技术方案.docx"
 CODEMAP = DOCS / "照片记忆本代码模块说明.docx"
@@ -110,6 +112,13 @@ def add_table(doc, headers: list[str], rows: list[list[str]], widths: list[float
     table = doc.add_table(rows=1, cols=len(headers))
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.style = "Table Grid"
+    borders = OxmlElement("w:tblBorders")
+    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        border = OxmlElement(f"w:{edge}")
+        for key, value in (("val", "single"), ("sz", "4"), ("color", GRID)):
+            border.set(qn(f"w:{key}"), value)
+        borders.append(border)
+    table._tbl.tblPr.append(borders)
     set_repeat_table_header(table.rows[0])
     set_row_cant_split(table.rows[0])
     for i, header in enumerate(headers):
@@ -152,6 +161,11 @@ def configure_document(doc: Document):
     section.right_margin = Inches(0.72)
 
     styles = doc.styles
+    for style in styles:
+        properties = style._element.find(qn("w:pPr"))
+        if properties is not None:
+            for border in list(properties.findall(qn("w:pBdr"))):
+                properties.remove(border)
     normal = styles["Normal"]
     normal.font.name = FONT_CN
     normal._element.rPr.rFonts.set(qn("w:eastAsia"), FONT_CN)
@@ -255,7 +269,8 @@ def add_figure(doc, path: Path, caption: str, width=7.0):
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p.paragraph_format.keep_with_next = True
-    p.add_run().add_picture(str(path), width=Inches(width))
+    picture = p.add_run().add_picture(str(path), width=Inches(width))
+    picture._inline.docPr.set("descr", caption)
     cap = doc.add_paragraph()
     cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
     cap.paragraph_format.space_after = Pt(10)
@@ -266,7 +281,7 @@ def add_figure(doc, path: Path, caption: str, width=7.0):
 def build_prd():
     doc = Document()
     configure_document(doc)
-    add_cover(doc, "照片记忆本产品需求文档", "完整功能版  先有照片后补文字", "V4.0")
+    add_cover(doc, "照片记忆本产品需求文档", "完整功能版  先有照片后补文字", "V4.1")
     add_intro(
         doc,
         "照片记忆本定位为本地优先的情感型记忆产品。用户先保存照片，再按需要补充标题、备忘录、心情、状态和主题；系统通过长期副本、记忆回声、月度年度总结，把零散照片转化为可以持续回看的个人记忆档案。",
@@ -399,8 +414,8 @@ def build_prd():
     ])
     doc.add_heading("7.2 故事结构", level=2)
     add_table(doc, ["类型", "正常结构", "精简结构"], [
-        ["月度", "7 页：封面、概览、情绪开场、代表记忆、长期副本、收束、感言", "仅 1 至 2 条记忆时生成 4 页"],
-        ["年度", "12 页：封面、概览、季节、长期副本、情绪、代表记忆、原话、日常、收束、感言", "仅 1 至 2 条记忆时生成 4 页"],
+        ["月度", "6 至 7 页：封面、概览、情绪开场、代表记忆、可选长期副本、收束、感言", "仅 1 至 2 条记忆时生成 4 页"],
+        ["年度", "11 至 12 页：封面、概览、季节、可选长期副本、情绪、代表记忆、原话、日常、收束、感言", "仅 1 至 2 条记忆时生成 4 页"],
     ], [1.05, 4.15, 1.7])
     add_bullets(doc, [
         "情绪开场使用当期出现次数最多的心情；并列时优先最近出现的心情。",
@@ -412,18 +427,20 @@ def build_prd():
     doc.add_heading("7.3 回看与编辑", level=2)
     add_table(doc, ["能力", "业务规则"], [
         ["沉浸播放", "全屏逐页浏览，窄屏自适应；系统减少动态效果设置开启时关闭非必要动画"],
-        ["档案馆", "按月度或年度筛选，查看已生成、未读和已读总结，并可删除单份总结"],
+        ["档案馆", "按月度或年度筛选，打开已生成总结并恢复观看；删除接口已实现，当前界面尚未提供删除按钮"],
         ["编辑", "可修改旁白、替换授权照片和调整页面顺序；乐观锁冲突时要求刷新，避免覆盖新版本"],
-        ["重新生成", "重新读取当前记忆和授权设置，覆盖旧页面；空周期则移除旧总结"],
+        ["重新生成", "重新读取当前记忆和授权设置，覆盖旧页面；非空周期保留感言，空周期删除旧总结及其感言"],
         ["回声感言", "看完后可写一段总结感言并选择封面照片，作为独立记录保留"],
     ], [1.45, 5.5])
     doc.add_heading("7.4 AI 与隐私", level=2)
     add_bullets(doc, [
         "本地模板始终可用；缺少 AI 配置、网络超时、接口失败或输出校验不通过时自动回退本地模板。",
         "只有用户主动开启云端 AI，后端才发送授权范围内的最小结构化快照；本地路径、数据库连接和密钥永不发送。",
-        "AI 仅改写第二人称旁白。后端逐页校验页面数量、事实引用和数字，禁止引入快照外事实。",
-        "单条记忆可以设置“不参与总结”；软删除记忆和被排除记忆都不会进入新快照。",
+        "AI 仅改写第二人称旁白。后端校验页数、顺序、已知事实引用和阿拉伯数字；自然语言语义校验仍有边界，默认使用本地模板。",
+        "单条记忆“不参与总结”和授权偏好更新已有 API；独立设置界面尚待补齐。被排除和已删除记忆不会进入新快照。",
     ])
+    doc.add_heading("7.5 情绪电影完整业务流程", level=2)
+    add_figure(doc, SUMMARY_FLOW, "月度年度总结从授权到生成和回看的实际流程", 6.25)
 
     doc.add_heading("8 数据保险箱与应用锁", level=1)
     doc.add_heading("8.1 数据保险箱", level=2)
@@ -444,7 +461,7 @@ def build_prd():
         "支持立即锁定、修改密码、暂停保护、用原密码重新开启和恢复密钥重设。",
     ])
     doc.add_heading("8.3 当前数据边界", level=2)
-    doc.add_paragraph("服务器导出覆盖照片、记忆、主题、长期副本、记忆回声、回声感言和回声偏好。重要日子及自定义心情和状态的候选列表仍保存在浏览器 IndexedDB 或 localStorage；记忆中已经使用的心情和状态会随记忆导出。后续版本应把这两类浏览器数据迁移到 PostgreSQL，纳入统一备份。")
+    doc.add_paragraph("服务器 JSON 和 ZIP 导出覆盖照片、记忆、主题、长期副本、记忆回声、回声感言和回声偏好。新增情绪电影快照、故事页、总结感言与总结偏好尚未纳入 JSON 和 ZIP 迁移包；它们会随完整 PostgreSQL 原生数据库备份保存。重要日子及自定义心情和状态的候选列表仍在浏览器 IndexedDB 或 localStorage；已经用于记忆的心情和状态随记忆导出。原生数据库备份不包含原图文件，应同时保存照片 ZIP。")
 
     doc.add_heading("9 完整业务逻辑", level=1)
     add_figure(doc, FLOW, "照片记忆本完整业务逻辑流程图", 7.0)
@@ -505,7 +522,7 @@ def build_prd():
 def build_tech():
     doc = Document()
     configure_document(doc)
-    add_cover(doc, "照片记忆本前后端技术方案", "本地优先网页 MVP  完整实现版", "V4.0")
+    add_cover(doc, "照片记忆本前后端技术方案", "本地优先网页 MVP  完整实现版", "V4.1")
     add_intro(
         doc,
         "系统采用 React TypeScript Vite 前端、NestJS Prisma 后端和本机 PostgreSQL。图片作为文件保存在 D 盘，结构化数据保存在 PostgreSQL；情绪电影以冻结快照、本地模板和可选云端 AI 构建，应用锁与数据保险箱保护本地数据。",
@@ -598,7 +615,7 @@ def build_tech():
         ["EchoReflection", "memoryEchoId memoryId text sourceEchoDate", "回声可有一条感言"],
         ["EchoPreference", "enabled excludedMoods", "每用户一条"],
         ["MemorySummary", "periodType periodKey status sourceHash generationMode version viewedAt", "用户 周期类型 周期键唯一；保存冻结快照和阅读进度"],
-        ["MemorySummaryPage", "pageType displayOrder narration payload factRefs version", "属于一份总结；页面顺序唯一；乐观锁编辑"],
+        ["MemorySummaryPage", "pageType displayOrder narration originalNarration payload version", "属于一份总结；页面顺序唯一；乐观锁编辑；factRefs 仅用于生成时校验"],
         ["SummaryReflection", "summaryId text coverMediaId", "每份总结最多一条回声感言"],
         ["SummaryPreference", "enabled allowText allowPhotos allowCloudAi consentReviewedAt", "每用户一条授权和隐私偏好"],
         ["AppLockSetting", "passwordHash recoveryKeyHash failedAttempts lockedUntil", "每用户一条"],
@@ -662,7 +679,7 @@ def build_tech():
     add_bullets(doc, [
         "MONTH 使用当月第一天到下一月第一天，YEAR 使用当年第一天到下一年第一天，统一按 Asia Shanghai 切分。",
         "SummarySnapshotService 只读取未删除且未排除的记忆，根据 allowText 和 allowPhotos 裁剪字段，并计算 SHA 256 sourceHash。",
-        "buildStoryPlan 对空周期返回 NO CONTENT；一至两条记忆生成四页精简版，正常月度七页、年度十二页。",
+        "buildStoryPlan 对空周期返回 NO CONTENT；一至两条记忆生成四页精简版。正常月度六至七页、年度十一至十二页，无关联副本时模板移除 COPY 页。",
         "最高频心情按次数、最近出现时间和中文名称稳定排序；无心情时从鼓励文案池稳定选取并避开最近三次。",
         "代表记忆按内容完整度和日期去重评分，长期副本只展示周期内确实有关联记忆的进展。",
     ])
@@ -670,10 +687,13 @@ def build_tech():
     add_numbered(doc, [
         "SummaryTemplateService 先为每一页生成可直接使用的第二人称本地旁白。",
         "仅当 SummaryPreference 已确认且 allowCloudAi 为 true 时，SummaryAiAdapter 才发送裁剪后的结构化快照。",
-        "SummaryValidationService 验证页数、页序、factRefs、数字和引用事实，拒绝快照之外的内容。",
+        "SummaryValidationService 验证页数、页序、factRefs 和阿拉伯数字；当前不具备任意自然语言经历、中文数字或所有情绪名称的语义验证能力。",
         "AI 未配置、超时、返回格式错误或事实校验失败时，继续保存本地模板，generationMode 标记为 TEMPLATE。",
         "保存时从 API 响应递归移除 sourceSnapshot 与 storagePath；密钥只存在服务端环境变量。",
     ])
+    doc.add_page_break()
+    doc.add_heading("8.4 情绪电影业务与持久化流程", level=2)
+    add_figure(doc, SUMMARY_FLOW, "现有总结生命周期与前端回看路径", 6.25)
 
     doc.add_heading("9 数据保险箱", level=1)
     doc.add_heading("9.1 导出格式", level=2)
@@ -729,7 +749,7 @@ def build_tech():
         "LOCAL_USER_ID 默认 local user，可在独立测试进程中覆盖。",
         "PORT 默认 3001。",
         "SUMMARY_AI_BASE_URL SUMMARY_AI_API_KEY SUMMARY_AI_MODEL 用于可选云端 AI；任一必需项缺失时走本地模板。",
-        "SUMMARY_AI_TIMEOUT_MS 控制 AI 请求超时，默认 12000 毫秒。所有真实密钥只放在未纳入 Git 的 server/.env。",
+        "SUMMARY_AI_TIMEOUT_MS 控制 AI 请求超时，代码默认 15000 毫秒，可在 server/.env 中覆盖。所有真实密钥只放在未纳入 Git 的 server/.env。",
     ])
 
     doc.add_heading("12 测试与质量保证", level=1)
@@ -761,6 +781,8 @@ def build_tech():
         ["自定义候选列表在 localStorage", "未使用的候选值不随迁移", "新增用户字典表或导出前端偏好"],
         ["单用户固定 userId", "不支持多人或账号隔离", "引入本地账号和用户主表"],
         ["手动数据库备份", "依赖用户主动执行", "增加计划任务和保留策略"],
+        ["JSON ZIP 尚未覆盖情绪电影表", "迁移包不含总结快照 页面 感言 偏好", "扩展格式版本与导入关系；当前同时保留数据库备份和照片 ZIP"],
+        ["部分总结能力仅有 API", "删除、排除、偏好更新缺独立界面入口", "补齐设置和删除入口后再标记为完整前端能力"],
         ["本机 Cookie secure false", "只适用于 HTTP localhost", "部署 HTTPS 时启用 Secure"],
         ["云端 AI 为可选外部依赖", "启用时会发送已授权的最小结构化内容", "保持默认关闭并在设置中明确服务提供方"],
         ["当前无背景音乐和双人模式", "情绪电影专注个人图文回看", "仅在用户价值验证后再单独设计，不与当前范围混入"],
@@ -787,27 +809,27 @@ FILE_DESCRIPTIONS = {
     "src/components/LongTermCopyForm.tsx": "长期副本创建/编辑表单，选择唯一关联主题并维护名称、日期和状态。",
     "src/components/LongTermCopyTimeline.tsx": "按事件时间稳定排列副本内照片、标题和备忘录。",
     "src/components/MemoryCard.tsx": "照片墙单卡片，展示缩略图、标题、时间与主题，并触发详情。",
-    "src/components/MemoryDetail.tsx": "记忆详情与编辑入口，展示完整图文、标签、回声感言和总结排除开关。",
+    "src/components/MemoryDetail.tsx": "记忆详情，展示完整图文、标签与回声感言，并提供编辑和删除入口；尚未接入总结排除开关。",
     "src/components/MemoryEchoCard.tsx": "首页回声卡片，呈现单条回声理由、照片和查看/忽略/写感言动作。",
     "src/components/MemoryEchoPage.tsx": "独立回声页面，浏览今日和最近三十天历史并进入设置。",
     "src/components/MemoryForm.tsx": "单张记忆新增与编辑表单，处理标题、备忘录、时间、心情、状态、主题和自定义选项。",
     "src/components/MemorySummaryPage.tsx": "保留的旧版统计总结页，供兼容按月/年统计查询；新体验由情绪电影组件承接。",
-    "src/components/SummaryArchivePage.tsx": "情绪电影档案馆，按月度/年度筛选并打开、继续或删除总结。",
+    "src/components/SummaryArchivePage.tsx": "情绪电影档案馆，按月度/年度筛选并打开、继续观看及查看总结感言；当前没有删除按钮。",
     "src/components/SummaryReflectionCard.tsx": "在档案馆展示已保存的月度/年度回声感言和封面。",
     "src/components/SummaryReflectionEditor.tsx": "总结结束后的感言编辑器，校验文字并允许选择授权照片作为封面。",
-    "src/components/SummaryReminderCard.tsx": "首页未读总结提醒，提供立即查看、查看档案和本次关闭。",
+    "src/components/SummaryReminderCard.tsx": "首页未读总结提醒，提供立即查看和稍后提醒；仅展示未读 READY 总结。",
     "src/components/SummaryStoryEditor.tsx": "情绪电影页面编辑器，修改旁白、代表照片和顺序，并把版本号交给乐观锁接口。",
     "src/components/SummaryStoryPage.tsx": "按 COVER、MOOD、MEMORY 等页面类型渲染故事页，严格使用后端公开 payload。",
     "src/components/SummaryStoryPlayer.tsx": "全屏逐页播放器，处理上一页/下一页、关闭、继续阅读、已读和进入编辑/感言。",
     "src/components/Toast.tsx": "轻量全局反馈条，用于显示成功、失败和需要用户注意的短消息。",
     "src/hooks/use-memory-summaries.ts": "情绪电影前端状态机。负责首次检查、授权、提醒、档案加载、播放进度队列、页面编辑、重新生成、感言和删除。",
     "src/domain/memory-summary.ts": "情绪电影领域类型与守卫；定义周期、状态、页面、偏好、感言及 READY 判断。",
-    "src/domain/memory.ts": "照片记忆核心模型、创建与更新输入、完整度和展示所需的类型。",
+    "src/domain/memory.ts": "照片记忆核心模型与 MemoryDraft 类型，包含图文、时间、标签、主题以及回声和总结排除字段。",
     "src/domain/memory-echo.ts": "记忆回声、感言和偏好领域模型。",
-    "src/domain/memory-echo-state.ts": "回声前端 reducer 与状态转换，处理今日回声、历史、忽略、排除和感言。",
+    "src/domain/memory-echo-state.ts": "回声列表状态更新辅助函数，处理忽略、感言替换与异步详情感言是否仍属于当前记忆的判断。",
     "src/domain/long-term-copy-policy.ts": "主题与长期副本授权决策规则，区分本次加入、继续询问和永久不询问。",
     "src/domain/batch-import.ts": "批量导入队列、统一主题和失败项重试的纯业务函数。",
-    "src/domain/date.ts": "日期格式化、上海时区显示和分组辅助函数。",
+    "src/domain/date.ts": "日期格式化和日期分组辅助函数；展示使用浏览器本机日期环境。",
     "src/domain/important-day.ts": "重要日子模型、纪念日日期差和关联记忆规则。",
     "src/domain/data-vault.ts": "导出、导入、备份、存储状态和应用锁的前端类型。",
     "src/domain/options.ts": "默认心情、状态和主题候选项。",
@@ -841,7 +863,7 @@ FILE_DESCRIPTIONS = {
     "server/src/summaries/summary-story.types.ts": "快照、故事计划、页面草稿、事实引用和情绪结果类型。",
     "server/src/summaries/summary-template.service.ts": "生成可离线使用的第二人称本地旁白，是 AI 关闭或失败时的可信基线。",
     "server/src/summaries/summary-ai.adapter.ts": "调用兼容 OpenAI Chat Completions 的可选服务；读取服务端环境变量、限制超时并把失败安全降级。",
-    "server/src/summaries/summary-validation.service.ts": "校验 AI 页数、事实引用和数字，拒绝快照外内容，保证旁白不虚构。",
+    "server/src/summaries/summary-validation.service.ts": "校验 AI 页数、页序、已知事实引用与阿拉伯数字；不构成任意自然语言经历的完整语义验证。",
     "server/src/summaries/summary-copy.ts": "维护鼓励文案等受控产品文案。",
     "server/src/summaries/summary.domain.ts": "兼容旧版按需统计接口的日期区间与汇总纯函数。",
     "server/src/summaries/summary.dto.ts": "总结生成、筛选、进度、页面编辑、感言和授权偏好的 DTO 校验。",
@@ -881,6 +903,9 @@ FILE_DESCRIPTIONS = {
     "index.html": "Vite 页面壳和 React 挂载节点。",
     ".gitignore": "排除 node_modules、构建产物、本机环境变量和 D 盘运行数据，避免隐私数据进入 Git。",
 }
+
+
+FILE_DESCRIPTIONS["tools/generate_product_visuals.py"] = "用 Pillow 和共享画布绘制业务总流程、情绪电影流程和产品页面示意图，同时输出可编辑 SVG 与高清 PNG；不读取用户照片。"
 
 
 def source_inventory() -> list[Path]:
@@ -977,7 +1002,7 @@ def code_description(relative: str) -> str:
 def build_code_map():
     doc = Document()
     configure_document(doc)
-    add_cover(doc, "照片记忆本代码模块说明", "逐文件功能分类与实现索引", "V1.0")
+    add_cover(doc, "照片记忆本代码模块说明", "逐文件功能分类与实现索引", "V1.1")
     add_intro(
         doc,
         "代码按“前端交互与状态—Repository—NestJS Controller/Service—Prisma/PostgreSQL—D 盘文件系统”分层。情绪电影在既有架构上新增独立领域、前端状态机和后端快照生成链路，没有绕过应用锁或数据边界。",
@@ -1054,6 +1079,7 @@ def build_code_map():
 
 if __name__ == "__main__":
     DOCS.mkdir(parents=True, exist_ok=True)
+    build_visuals()
     build_prd()
     build_tech()
     build_code_map()

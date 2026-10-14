@@ -37,7 +37,7 @@ SUMMARY_AI_TIMEOUT_MS=12000
 - `SUMMARY_AI_BASE_URL`：兼容 OpenAI Chat Completions 的服务根地址，后端会请求 `/v1/chat/completions`。
 - `SUMMARY_AI_API_KEY`：仅从本机环境变量读取，不进入数据库、响应或日志。
 - `SUMMARY_AI_MODEL`：服务端配置的模型名称。
-- `SUMMARY_AI_TIMEOUT_MS`：请求超时毫秒数，默认 `12000`。
+- `SUMMARY_AI_TIMEOUT_MS`：请求超时毫秒数，默认 `15000`；以上示例将其设为 `12000`。
 - 任一必需配置缺失、请求超时、返回结构无效或旁白引用了快照外事实时，系统自动使用本地第二人称模板完成总结。
 
 ## 已实现的 MVP
@@ -99,3 +99,11 @@ npm --prefix server run build
 ```
 
 当前回归基线：前端 38 个测试文件共 100 项，后端 33 个测试文件共 136 项；前后端生产构建均通过。
+
+## 产品文档与示意图
+
+`docs` 目录中的 PRD、前后端技术方案和代码模块说明已同步到情绪电影版本；业务逻辑总图、情绪电影流程图及产品示意图分别提供 PNG 和 SVG。
+
+文档与图片可以通过 `tools/generate_final_docs.py` 统一生成。`tools/generate_product_visuals.py` 单独生成图片，不读取用户照片；产品示意图中的照片与内容均为示例。
+
+当前实现边界：总结删除、单条记忆排除与偏好更新已有 API，但独立设置和删除入口尚未接入界面。JSON/ZIP 迁移包尚不包含情绪电影快照、故事页、总结感言与总结偏好；完整 PostgreSQL 备份包含这些表，但不包含照片原文件，留存时需同时保存照片 ZIP。

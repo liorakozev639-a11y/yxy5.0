@@ -34,14 +34,14 @@ export function buildMemorySearchQueries(userId: string, input: MemorySearchInpu
         similarity(lower(m."note"), ${keyword})
       )`);
     } else {
-      const pattern = `%${keyword}%`;
+      const pattern = `%${escapeLike(keyword)}%`;
       conditions.push(Prisma.sql`(
-        lower(m."title") LIKE ${pattern}
-        OR lower(m."note") LIKE ${pattern}
+        lower(m."title") LIKE ${pattern} ESCAPE '!'
+        OR lower(m."note") LIKE ${pattern} ESCAPE '!'
       )`);
       scoreParts.push(Prisma.sql`(
-        CASE WHEN lower(m."title") LIKE ${pattern} THEN 2 ELSE 0 END
-        + CASE WHEN lower(m."note") LIKE ${pattern} THEN 1 ELSE 0 END
+        CASE WHEN lower(m."title") LIKE ${pattern} ESCAPE '!' THEN 2 ELSE 0 END
+        + CASE WHEN lower(m."note") LIKE ${pattern} ESCAPE '!' THEN 1 ELSE 0 END
       )`);
     }
   }
@@ -94,4 +94,8 @@ function buildOrder(input: MemorySearchInput) {
 
 function uniqueValues(values?: string[]) {
   return [...new Set((values ?? []).map((value) => value.trim()).filter(Boolean))];
+}
+
+function escapeLike(value: string) {
+  return value.replaceAll('!', '!!').replaceAll('%', '!%').replaceAll('_', '!_');
 }

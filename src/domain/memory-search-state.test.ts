@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { MemorySearchItem, MemorySearchPage, MemorySearchRequest } from './memory-search';
-import { initialMemorySearchState, memorySearchReducer } from './memory-search-state';
+import { initialMemorySearchState, memorySearchReducer, resolveRefreshAnchor } from './memory-search-state';
 
 const request: MemorySearchRequest = { keywords: ['海边'], matchMode: 'EXACT', sort: 'RELEVANCE', pageSize: 5 };
 
@@ -80,5 +80,20 @@ describe('memorySearchReducer', () => {
     });
     expect(next).toMatchObject({ status: 'ready', loadedPages: 2, anchorId: 'two' });
     expect(next.items.map((memory) => memory.id)).toEqual(['one', 'two']);
+  });
+
+  it('removes a deleted or no-longer-matching memory after refresh and keeps items on refresh failure', () => {
+    const current = { ...initialMemorySearchState, status: 'ready' as const, requestId: 5, request, items: [item('one'), item('two')], loadedPages: 1 };
+    const refreshing = memorySearchReducer(current, { type: 'started', requestId: 6, request, append: false, preserveItems: true });
+    const failed = memorySearchReducer(refreshing, { type: 'failed', requestId: 6, error: '离线' });
+    const refreshed = memorySearchReducer({ ...current, requestId: 7 }, { type: 'refreshed', requestId: 7, page: page(['two'], { total: 1 }), loadedPages: 1, anchorId: 'one' });
+
+    expect(failed.items.map((memory) => memory.id)).toEqual(['one', 'two']);
+    expect(refreshed.items.map((memory) => memory.id)).toEqual(['two']);
+  });
+
+  it('falls back to the nearest surviving card when the original anchor disappears', () => {
+    expect(resolveRefreshAnchor([item('one'), item('two'), item('three')], [item('one'), item('three')], 'two')).toBe('three');
+    expect(resolveRefreshAnchor([item('one')], [], 'one')).toBeUndefined();
   });
 });

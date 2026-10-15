@@ -16,8 +16,8 @@ export function MemorySearchFilters({ value, catalog, onChange }: {
       </header>
 
       <div className="memory-search-date-grid">
-        <label>开始日期<input type="date" value={value.from?.slice(0, 10) ?? ''} onChange={(event) => onChange({ ...value, from: event.target.value || undefined })} /></label>
-        <label>结束日期<input type="date" value={value.to?.slice(0, 10) ?? ''} onChange={(event) => onChange({ ...value, to: event.target.value || undefined })} /></label>
+        <label>开始日期<input type="date" value={value.from ? shanghaiDateValue(value.from) : ''} onChange={(event) => onChange({ ...value, from: event.target.value ? shanghaiDayBoundary(event.target.value, 0) : undefined })} /></label>
+        <label>结束日期（含）<input type="date" value={value.to ? shanghaiDateValue(value.to, true) : ''} onChange={(event) => onChange({ ...value, to: event.target.value ? shanghaiDayBoundary(event.target.value, 1) : undefined })} /></label>
       </div>
 
       <FilterGroup title="心情（单选）">
@@ -52,4 +52,16 @@ function Choice({ selected, onClick, children }: { selected: boolean; onClick():
 function toggle(values: string[] | undefined, value: string) {
   const current = values ?? [];
   return current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
+}
+
+function shanghaiDayBoundary(date: string, dayOffset: number) {
+  const instant = new Date(`${date}T00:00:00+08:00`);
+  instant.setUTCDate(instant.getUTCDate() + dayOffset);
+  return instant.toISOString();
+}
+
+function shanghaiDateValue(value: string, exclusiveEnd = false) {
+  const instant = new Date(value);
+  if (exclusiveEnd) instant.setMilliseconds(instant.getMilliseconds() - 1);
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(instant);
 }

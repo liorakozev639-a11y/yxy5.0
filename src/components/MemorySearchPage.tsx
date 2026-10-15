@@ -28,7 +28,7 @@ export function MemorySearchPage({ catalog, flow, onSelect }: {
   flow: MemorySearchFlow;
   onSelect(id: string): void;
 }) {
-  const [criteria, setCriteria] = useState<MemorySearchCriteria>(() => requestToCriteria(flow.request));
+  const [criteria, setCriteria] = useState<MemorySearchCriteria>(() => flow.parsed ? parsedToCriteria(flow.parsed) : requestToCriteria(flow.request));
   const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export function MemorySearchPage({ catalog, flow, onSelect }: {
   }, [flow.parsed]);
 
   const hasCriteria = criteriaCount(criteria) > 0;
-  const confirmation = useMemo(() => flow.parsed ?? criteriaToParsed(criteria, catalog), [catalog, criteria, flow.parsed]);
+  const confirmation = useMemo(() => criteriaToParsed(criteria, catalog), [catalog, criteria]);
   const hasSearched = Boolean(flow.request);
   const isEmpty = hasSearched && flow.status === 'ready' && flow.items.length === 0;
 
@@ -101,7 +101,7 @@ export function MemorySearchPage({ catalog, flow, onSelect }: {
         items={flow.items}
         nextCursor={flow.nextCursor}
         loading={flow.status === 'loading'}
-        error={flow.status === 'error' ? flow.error : undefined}
+        error={flow.status === 'error' ? `当前结果可能不完整：${flow.error ?? '连接失败'}` : undefined}
         onLoadMore={() => void flow.loadMore()}
         onRetry={() => void flow.retry()}
         onSelect={onSelect}
@@ -114,6 +114,10 @@ function requestToCriteria(request?: MemorySearchRequest): MemorySearchCriteria 
   if (!request) return {};
   const { cursor: _cursor, pageSize: _pageSize, ...criteria } = request;
   return criteria;
+}
+
+function parsedToCriteria(parsed: ParsedMemorySearch): MemorySearchCriteria {
+  return { ...parsed.criteria, ...(parsed.pendingKeywords.length ? { keywords: parsed.pendingKeywords } : {}) };
 }
 
 function criteriaCount(criteria: MemorySearchCriteria) {

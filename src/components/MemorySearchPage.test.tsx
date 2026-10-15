@@ -31,6 +31,7 @@ describe('MemorySearchPage', () => {
     expect(html).toContain('我理解的是这些条件');
     expect(html).toContain('海边');
     expect(html).toContain('开始寻迹');
+    expect(html).toContain('aria-pressed="true"');
   });
 
   it('offers user-confirmed fuzzy search and no more than three relaxation suggestions for exact empty results', () => {
@@ -58,6 +59,7 @@ describe('MemorySearchPage', () => {
     expect(loadingHtml).toContain('还在这里');
     expect(loadingHtml).toContain('正在继续寻找');
     expect(errorHtml).toContain('还在这里');
+    expect(errorHtml).toContain('当前结果可能不完整');
     expect(errorHtml).toContain('重试加载');
   });
 });

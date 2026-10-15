@@ -35,11 +35,12 @@ describe('memory search SQL builder', () => {
   });
 
   it('keeps user input in bound values and never interpolates it into SQL text', () => {
-    const malicious = "海边%' OR TRUE --";
+    const malicious = "海边%_' OR TRUE --";
     const query = inspect(buildMemorySearchQueries('local-user', { keywords: [malicious], pageSize: 5 }).rows as any);
 
     expect(query.text).not.toContain(malicious);
-    expect(query.values).toContain(`%${malicious.toLocaleLowerCase()}%`);
+    expect(query.text).toContain("ESCAPE '!'");
+    expect(query.values).toContain("%海边!%!_' or true --%");
   });
 
   it('orders relevance pages by score, event time and id and applies the full cursor tuple', () => {

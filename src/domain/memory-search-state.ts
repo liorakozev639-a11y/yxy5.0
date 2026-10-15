@@ -100,3 +100,11 @@ function deduplicate(items: MemorySearchItem[]): MemorySearchItem[] {
     return true;
   });
 }
+
+export function resolveRefreshAnchor(previousItems: MemorySearchItem[], nextItems: MemorySearchItem[], requestedId?: string) {
+  if (!requestedId || nextItems.length === 0) return undefined;
+  if (nextItems.some((item) => item.id === requestedId)) return requestedId;
+  const previousIndex = previousItems.findIndex((item) => item.id === requestedId);
+  const targetIndex = previousIndex < 0 ? 0 : Math.min(previousIndex, nextItems.length - 1);
+  return nextItems[targetIndex]?.id;
+}

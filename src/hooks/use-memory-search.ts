@@ -9,7 +9,7 @@ import {
   type SearchCatalog,
 } from '../domain/memory-search';
 import { parseMemorySearchInput } from '../domain/memory-query-parser';
-import { initialMemorySearchState, memorySearchReducer, type MemorySearchAction } from '../domain/memory-search-state';
+import { initialMemorySearchState, memorySearchReducer, resolveRefreshAnchor, type MemorySearchAction } from '../domain/memory-search-state';
 import type { ApiMemoryRepository } from '../repositories/api-memory-repository';
 import type { createMemorySearchHistory } from '../storage/memory-search-history';
 
@@ -134,7 +134,7 @@ export function useMemorySearch({
         ...(cursor ? { nextCursor: cursor } : {}),
         ...(lastPage.relaxationSuggestions ? { relaxationSuggestions: lastPage.relaxationSuggestions } : {}),
       };
-      send({ type: 'refreshed', requestId, page, loadedPages, anchorId });
+      send({ type: 'refreshed', requestId, page, loadedPages, anchorId: resolveRefreshAnchor(current.items, items, anchorId) });
       return page;
     } catch (error) {
       send({ type: 'failed', requestId, error: readableError(error) });
@@ -159,6 +159,8 @@ export function useMemorySearch({
     send({ type: 'cleared' });
   }, [send]);
 
+  const setAnchor = useCallback((anchorId?: string) => send({ type: 'anchor', anchorId }), [send]);
+
   return {
     ...state,
     inputText,
@@ -175,6 +177,7 @@ export function useMemorySearch({
     removeHistory,
     clearHistory,
     clear,
+    setAnchor,
   };
 }
 

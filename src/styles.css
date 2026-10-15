@@ -33,6 +33,7 @@ h1, h2, p { margin: 0; }
 .search-box span { font-size: 21px; line-height: 1; }
 .search-box input { width: 100%; border: 0; outline: 0; background: transparent; color: #25302f; font-size: 12px; }
 .search-box input::placeholder { color: #a4aaa6; }
+.home-search-entry button { flex: 0 0 auto; padding: 6px 9px; border: 0; border-radius: 999px; background: #e6efeb; color: #54817f; font-size: 10px; }
 .home-summary-card { margin: 20px 0 34px; padding: 28px 30px; border: 1px solid #ded8ce; border-radius: 20px; background: linear-gradient(135deg, #f4eee5, #edf4f0); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .home-summary-card h2 { margin: 9px 0 8px; font: 600 25px "Noto Serif SC", serif; }
 .home-summary-card p { color: #7e8883; font-size: 13px; line-height: 1.7; }

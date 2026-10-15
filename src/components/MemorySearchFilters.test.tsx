@@ -29,6 +29,17 @@ describe('MemorySearchFilters', () => {
     expect(onChange).toHaveBeenNthCalledWith(2, expect.objectContaining({ statusValues: ['散步', '约会'] }));
     expect(onChange).toHaveBeenNthCalledWith(3, expect.objectContaining({ topicIds: ['topic-love', 'topic-exam'] }));
   });
+
+  it('converts inclusive calendar dates into Shanghai start and exclusive end instants', () => {
+    const onChange = vi.fn();
+    const tree = MemorySearchFilters({ value: {}, catalog, onChange });
+    const dateInputs = findElements(tree, 'input').filter((element) => element.props.type === 'date');
+    dateInputs[0].props.onChange({ target: { value: '2026-10-01' } });
+    dateInputs[1].props.onChange({ target: { value: '2026-10-01' } });
+
+    expect(onChange).toHaveBeenNthCalledWith(1, expect.objectContaining({ from: '2026-09-30T16:00:00.000Z' }));
+    expect(onChange).toHaveBeenNthCalledWith(2, expect.objectContaining({ to: '2026-10-01T16:00:00.000Z' }));
+  });
 });
 
 function findButton(node: ReactNode, text: string): ReactElement<any> {
@@ -40,4 +51,12 @@ function findButton(node: ReactNode, text: string): ReactElement<any> {
     try { return findButton(child, text); } catch { /* continue */ }
   }
   throw new Error(`找不到按钮：${text}`);
+}
+
+function findElements(node: ReactNode, type: string): ReactElement<any>[] {
+  if (!node || typeof node !== 'object') return [];
+  const element = node as ReactElement<any>;
+  const matches = element.type === type ? [element] : [];
+  const children = Array.isArray(element.props?.children) ? element.props.children : [element.props?.children];
+  return [...matches, ...children.flatMap((child: ReactNode) => findElements(child, type))];
 }

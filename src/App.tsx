@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useReducer, useState } from 'react';
 import { appReducer, initialState } from './app-state';
-import { formatDay } from './domain/date';
+import { resolveRefreshAnchor } from './domain/memory-search-state';
 import { createMemoryRepository } from './storage/db';
 import { createImportantDayRepository } from './storage/db';
+import { createMemorySearchHistory } from './storage/memory-search-history';
 import type { ImportantDay } from './domain/important-day';
 import type { Memory, MemoryDraft } from './domain/memory';
 import type { Topic } from './domain/topic';
@@ -19,7 +20,7 @@ import { LongTermCopyTimeline } from './components/LongTermCopyTimeline';
 import { HomeView } from './components/HomeView';
 import { MemoryDetail } from './components/MemoryDetail';
 import { MemoryForm } from './components/MemoryForm';
-import { MemoryCard } from './components/MemoryCard';
+import { MemorySearchPage } from './components/MemorySearchPage';
 import { Toast } from './components/Toast';
 import { ImportantDaysView } from './components/ImportantDaysView';
 import { LongTermCopyDecisionDialog, type CopyDecisionMap } from './components/LongTermCopyDecisionDialog';
@@ -36,23 +37,46 @@ import { SummaryStoryPlayer } from './components/SummaryStoryPlayer';
 import { SummaryStoryEditor } from './components/SummaryStoryEditor';
 import { SummaryReflectionEditor } from './components/SummaryReflectionEditor';
 import { useMemorySummaries } from './hooks/use-memory-summaries';
+import { useMemorySearch } from './hooks/use-memory-search';
 import type { AppLockStatus } from './domain/data-vault';
 import { ApiAppLockRepository } from './repositories/api-app-lock-repository';
 import { ApiVaultRepository } from './repositories/api-vault-repository';
 import { AppLockGate } from './components/AppLockGate';
 import { DataVaultPage } from './components/DataVaultPage';
 
-type View = 'home' | 'timeline' | 'important' | 'copies' | 'echo' | 'summary' | 'vault';
+type View = 'home' | 'search' | 'important' | 'copies' | 'echo' | 'summary' | 'vault';
 type PolicyRequest = { candidates: CopyDecisionCandidate[]; resolve: (decisions: CopyDecisionMap) => void; reject: (error: Error) => void };
 
 export const APP_NAV_ITEMS = [
   { view: 'home', label: '记忆', icon: '▦' },
-  { view: 'timeline', label: '时间线', icon: '☷' },
+  { view: 'search', label: '记忆寻迹', icon: '⌕' },
   { view: 'copies', label: '长期副本', icon: '◌' },
   { view: 'important', label: '重要日子', icon: '♡' },
 ] as const;
 
 export const APP_SUMMARY_ENTRY_LABEL = '情绪电影';
+
+export function canAccessProtectedMemoryContent(status: AppLockStatus | undefined, skipped: boolean) {
+  if (!status) return false;
+  if (skipped) return true;
+  if (!status.configured) return false;
+  return !status.enabled || !status.locked;
+}
+
+export function restoreMemorySearchScroll(anchorId: string | undefined, find: (id: string) => { scrollIntoView(options: ScrollIntoViewOptions): void } | null = (id) => document.getElementById(`memory-search-${id}`)) {
+  if (!anchorId) return false;
+  const target = find(anchorId);
+  if (!target) return false;
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  return true;
+}
+
+export function searchRefreshToast(action: 'saved' | 'deleted', memoryId: string, items: Array<{ id: string }>) {
+  if (action === 'deleted') return '这段记忆已删除，寻迹结果已经更新';
+  return items.some((item) => item.id === memoryId)
+    ? '这段记忆已经更新，寻迹结果已同步'
+    : '修改已保存；这段记忆不再符合当前寻迹条件';
+}
 
 function readList(key: string): string[] {
   try {
@@ -74,6 +98,7 @@ export default function App() {
   const appLockRepository = useMemo(() => new ApiAppLockRepository(apiClient), [apiClient]);
   const vaultRepository = useMemo(() => new ApiVaultRepository(apiClient), [apiClient]);
   const importantRepository = useMemo(() => createImportantDayRepository(), []);
+  const searchHistory = useMemo(() => createMemorySearchHistory(localStorage), []);
   const [state, dispatch] = useReducer(appReducer, initialState);
   const [view, setView] = useState<View>('home');
   const [query, setQuery] = useState('');
@@ -99,8 +124,14 @@ export default function App() {
   const [selectedReflections, setSelectedReflections] = useState<EchoReflection[]>([]);
   const [lockStatus, setLockStatus] = useState<AppLockStatus>();
   const [lockSkipped, setLockSkipped] = useState(false);
-  const accessReady = !!lockStatus && (lockSkipped || !lockStatus.configured || !lockStatus.enabled || !lockStatus.locked);
+  const accessReady = canAccessProtectedMemoryContent(lockStatus, lockSkipped);
   const summaryFlow = useMemorySummaries(summaryRepository, accessReady && !state.loading);
+  const searchCatalog = useMemo(() => ({
+    moods: Array.from(new Set([...DEFAULT_MOODS, ...customMoods, ...state.memories.map((memory) => memory.mood).filter(Boolean)])),
+    statuses: Array.from(new Set([...customStatuses, ...state.memories.flatMap((memory) => memory.statuses)])),
+    topics: topics.filter((topic) => !topic.isNone).map((topic) => ({ id: topic.id, name: topic.name })),
+  }), [customMoods, customStatuses, state.memories, topics]);
+  const memorySearch = useMemorySearch({ repository, catalog: searchCatalog, history: searchHistory });
 
   useEffect(() => {
     let active = true;
@@ -187,6 +218,23 @@ export default function App() {
     await summaryFlow.openSummary(id);
   }
 
+  function openMemorySearch(initialText = '') {
+    setView('search');
+    if (initialText.trim()) memorySearch.parse(initialText);
+    else memorySearch.setInputText('');
+  }
+
+  function openSearchMemory(id: string) {
+    memorySearch.setAnchor(id);
+    dispatch({ type: 'selected', id });
+  }
+
+  function closeMemoryDetail() {
+    const anchorId = view === 'search' ? memorySearch.anchorId ?? state.selectedId : undefined;
+    dispatch({ type: 'selected' });
+    if (anchorId) window.requestAnimationFrame(() => restoreMemorySearchScroll(anchorId));
+  }
+
   async function saveReflection(text: string) {
     if (!reflectionEcho) return;
     const reflection = await echoRepository.saveReflection(reflectionEcho.id, text);
@@ -242,11 +290,20 @@ export default function App() {
   }
 
   async function saveMemory(draft: MemoryDraft) {
+    const previous = editor !== 'new' && editor ? editor : undefined;
     await resolveCopyPolicy(draft.topicIds ?? [], draft.eventAt);
-    const saved = await persistMemory(draft, editor !== 'new' && editor ? editor : undefined);
+    const saved = await persistMemory(draft, previous);
     dispatch({ type: 'upserted', memory: saved });
+    if (previous) dispatch({ type: 'selected' });
     setEditor(undefined);
-    setToast(editor !== 'new' && editor ? '这段记忆已经更新' : '这段记忆已经收好');
+    if (view === 'search' && memorySearch.request) {
+      const refreshed = await memorySearch.refreshLoadedPages(saved.id);
+      const anchorId = refreshed ? resolveRefreshAnchor(memorySearch.items, refreshed.items, saved.id) : undefined;
+      if (anchorId) window.requestAnimationFrame(() => restoreMemorySearchScroll(anchorId));
+      setToast(refreshed ? searchRefreshToast('saved', saved.id, refreshed.items) : '修改已保存；当前寻迹结果可能不完整，请稍后重试。');
+    } else {
+      setToast(previous ? '这段记忆已经更新' : '这段记忆已经收好');
+    }
   }
 
   async function persistMemory(draft: MemoryDraft, previous?: Memory) {
@@ -257,12 +314,20 @@ export default function App() {
 
   async function removeMemory() {
     if (!selectedMemory || !window.confirm('确定要删除这段记忆吗？照片和文字都会从本机移除。')) return;
-    await repository.remove(selectedMemory.id);
-    const affectedDays = importantDays.filter((day) => day.memoryIds.includes(selectedMemory.id));
-    await Promise.all(affectedDays.map((day) => importantRepository.put({ ...day, memoryIds: day.memoryIds.filter((id) => id !== selectedMemory.id) })));
+    const removedId = selectedMemory.id;
+    await repository.remove(removedId);
+    const affectedDays = importantDays.filter((day) => day.memoryIds.includes(removedId));
+    await Promise.all(affectedDays.map((day) => importantRepository.put({ ...day, memoryIds: day.memoryIds.filter((id) => id !== removedId) })));
     if (affectedDays.length) setImportantDays((current) => current.map((day) => affectedDays.find((changed) => changed.id === day.id) ?? day));
-    dispatch({ type: 'removed', id: selectedMemory.id });
-    setToast('这段记忆已删除');
+    dispatch({ type: 'removed', id: removedId });
+    if (view === 'search' && memorySearch.request) {
+      const refreshed = await memorySearch.refreshLoadedPages(removedId);
+      const anchorId = refreshed ? resolveRefreshAnchor(memorySearch.items, refreshed.items, removedId) : undefined;
+      if (anchorId) window.requestAnimationFrame(() => restoreMemorySearchScroll(anchorId));
+      setToast(refreshed ? searchRefreshToast('deleted', removedId, refreshed.items) : '记忆已删除；当前寻迹结果可能不完整，请稍后重试。');
+    } else {
+      setToast('这段记忆已删除');
+    }
   }
 
   function addMood(value: string) { setCustomMoods((current) => current.includes(value) ? current : [...current, value]); }
@@ -353,7 +418,7 @@ export default function App() {
   }
 
   if (!lockStatus) return <div className="app-loading"><div className="loading-orb">✦</div><p>正在检查本机保护状态…</p></div>;
-  if (!lockSkipped && (!lockStatus.configured || (lockStatus.enabled && lockStatus.locked))) {
+  if (!accessReady) {
     return <AppLockGate onSkip={() => setLockSkipped(true)} onStatusChange={(status) => { setLockStatus(status); setLockSkipped(false); }} repository={appLockRepository} status={lockStatus}><div /></AppLockGate>;
   }
   if (state.loading) return <div className="app-loading"><div className="loading-orb">✦</div><p>正在打开你的记忆本…</p></div>;
@@ -371,19 +436,20 @@ export default function App() {
           imageUrls={imageUrls}
           memories={state.memories}
           onAdd={() => setEditor('new')}
+          onOpenSearch={openMemorySearch}
           onQueryChange={setQuery}
           onSelect={(id) => dispatch({ type: 'selected', id })}
           query={query}
         />}
-        {view === 'timeline' && <Timeline memories={state.memories} imageUrls={imageUrls} onSelect={(id) => dispatch({ type: 'selected', id })} />}
+        {view === 'search' && <MemorySearchPage catalog={searchCatalog} flow={memorySearch} onSelect={openSearchMemory} />}
         {view === 'important' && <ImportantDaysView days={importantDays} imageUrls={imageUrls} memories={state.memories} onCreate={createImportantDay} onDelete={deleteImportantDay} onSelectMemory={(id) => dispatch({ type: 'selected', id })} onUpdate={updateImportantDay} />}
         {view === 'copies' && (selectedCopyId ? <LongTermCopyTimeline copyId={selectedCopyId} onBack={() => setSelectedCopyId(undefined)} repository={copyRepository} /> : <LongTermCopiesView copies={longTermCopies} onCreate={createLongTermCopy} onSelect={setSelectedCopyId} onToggleAutoCollect={toggleCopyAutoCollect} topics={topics} />)}
         {view === 'echo' && <MemoryEchoPage history={echoHistory} onBack={() => setView('home')} onDismiss={(echo) => void dismissCurrentEcho(echo)} onExclude={(memory) => void excludeEchoMemory(memory)} onOpen={(id) => dispatch({ type: 'selected', id })} onOpenSettings={() => setEchoSettingsOpen(true)} onReflect={setReflectionEcho} onDisableTopic={(topic) => void disableEchoTopic(topic)} today={todayEchoes} />}
         {view === 'summary' && <>{summaryFlow.error && <div className="error-banner">{summaryFlow.error}</div>}{summaryFlow.loading && <div className="summary-status">正在整理情绪电影档案…</div>}<SummaryArchivePage filter={summaryFlow.filter} onBack={() => setView('home')} onFilterChange={(filter) => void summaryFlow.loadArchive(filter)} onOpen={(id) => void openStorySummary(id)} reflections={summaryFlow.reflections} summaries={summaryFlow.summaries} /></>}
         {view === 'vault' && <DataVaultPage appLockRepository={appLockRepository} lockStatus={lockStatus} onBack={() => setView('home')} onLockStatusChange={(next) => { setLockStatus(next); if (next.configured) setLockSkipped(false); }} repository={vaultRepository} />}
       </main>
-      <nav className="bottom-nav"><button className={view === 'home' ? 'active' : ''} onClick={() => setView('home')} type="button"><span>▦</span>记忆</button><button className={view === 'timeline' ? 'active' : ''} onClick={() => setView('timeline')} type="button"><span>☷</span>时间线</button><button className={view === 'copies' ? 'active' : ''} onClick={() => { setView('copies'); setSelectedCopyId(undefined); }} type="button"><span>◌</span>长期副本</button><button className={view === 'important' ? 'active' : ''} onClick={() => setView('important')} type="button"><span>♡</span>重要日子</button></nav>
-      {selectedMemory && !editor && <MemoryDetail imageUrl={imageUrls[selectedMemory.id]} memory={selectedMemory} onClose={() => dispatch({ type: 'selected' })} onDelete={() => void removeMemory()} onEdit={() => setEditor(selectedMemory)} reflections={selectedReflections} />}
+      <nav className="bottom-nav"><button className={view === 'home' ? 'active' : ''} onClick={() => setView('home')} type="button"><span>▦</span>记忆</button><button className={view === 'search' ? 'active' : ''} onClick={() => openMemorySearch()} type="button"><span>⌕</span>记忆寻迹</button><button className={view === 'copies' ? 'active' : ''} onClick={() => { setView('copies'); setSelectedCopyId(undefined); }} type="button"><span>◌</span>长期副本</button><button className={view === 'important' ? 'active' : ''} onClick={() => setView('important')} type="button"><span>♡</span>重要日子</button></nav>
+      {selectedMemory && !editor && <MemoryDetail imageUrl={imageUrls[selectedMemory.id]} memory={selectedMemory} onClose={closeMemoryDetail} onDelete={() => void removeMemory()} onEdit={() => setEditor(selectedMemory)} reflections={selectedReflections} />}
       {editor && <MemoryForm customMoods={customMoods} customStatuses={customStatuses} topics={topics} initial={editor === 'new' ? undefined : editor} onAddMood={addMood} onAddStatus={addStatus} onAddTopic={addTopic} onBatchSelected={(files) => { setEditor(undefined); setBatchFiles(files); }} onCancel={() => setEditor(undefined)} onSave={saveMemory} />}
       {batchFiles && <BatchImportDialog files={batchFiles} topics={topics} onAddTopic={addTopic} onClose={() => setBatchFiles(undefined)} onComplete={(memories) => { if (!memories.length) return; dispatch({ type: 'upsertedMany', memories }); setToast(`已导入 ${memories.length} 张照片`); }} onResolvePolicy={resolveCopyPolicy} onSaveDraft={(draft) => persistMemory(draft)} />}
       {policyRequest && <LongTermCopyDecisionDialog candidates={policyRequest.candidates} onCancel={() => { policyRequest.reject(new Error('已取消保存')); setPolicyRequest(undefined); }} onConfirm={async (decisions) => { const request = policyRequest; setPolicyRequest(undefined); request.resolve(decisions); }} />}
@@ -435,12 +501,3 @@ const defaultTopics: Topic[] = [
 ];
 
 const DEFAULT_MOODS = ['开心', '平静', '难过', '焦虑', '感动', '疲惫'];
-
-function Timeline({ memories, imageUrls, onSelect }: { memories: import('./domain/memory').Memory[]; imageUrls: Record<string, string>; onSelect: (id: string) => void }) {
-  const groups = memories.reduce<Record<string, typeof memories>>((accumulator, memory) => {
-    const day = memory.eventAt.slice(0, 10);
-    (accumulator[day] ??= []).push(memory);
-    return accumulator;
-  }, {});
-  return <section className="page-section"><div className="page-heading"><div><span className="eyebrow">A QUIET WAY BACK</span><h1>时间线</h1><p>按发生的时间，把故事重新串起来。</p></div></div>{memories.length === 0 ? <div className="empty-state"><div className="empty-mark">◷</div><h2>时间线还在等第一段记忆</h2><p>从首页上传一张照片开始吧。</p></div> : <div className="timeline-list">{Object.entries(groups).map(([day, items]) => <div className="timeline-group" key={day}><div className="timeline-date">{formatDay(day)}</div><div className="timeline-items">{items.map((memory) => <MemoryCard imageUrl={imageUrls[memory.id]} key={memory.id} memory={memory} onClick={() => onSelect(memory.id)} />)}</div></div>)}</div>}</section>;
-}

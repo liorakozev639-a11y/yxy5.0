@@ -430,6 +430,40 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus
   .summary-editor-danger { align-items: flex-start; }
   .summary-consent-dialog { padding: 26px 20px; }
 }
+
+/* Memory search: narrative result timeline */
+.memory-search-heading { align-items: center; }
+.memory-search-mode { display: grid; gap: 5px; justify-items: end; color: #8d9792; font-size: 10px; }
+.memory-search-mode strong { color: #537f7d; font: 600 22px "Noto Serif SC", serif; }
+.memory-search-browse-all { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 16px; padding: 20px 24px; border: 1px dashed #cbd8d2; border-radius: 14px; color: #77847e; font-size: 11px; }
+.memory-search-page-status, .memory-search-empty { display: grid; justify-items: center; gap: 13px; min-height: 250px; margin-top: 24px; place-content: center; border: 1px dashed #d6d8d0; border-radius: 18px; color: #79857f; text-align: center; }
+.memory-search-page-status.is-error { color: #a7675c; }
+.memory-search-empty h2 { color: #465752; font: 600 22px "Noto Serif SC", serif; }
+.memory-search-empty p { color: #8c9691; font-size: 11px; }
+.memory-search-relaxations { display: grid; gap: 7px; width: min(420px, 100%); margin-top: 6px; }
+.memory-search-relaxations button { padding: 10px 13px; border: 1px solid #dce2dc; border-radius: 10px; background: #f7f7f2; color: #61756f; font-size: 10px; }
+.memory-search-timeline { margin-top: 38px; border-top: 1px solid #ddd9d1; }
+.memory-search-month { display: grid; grid-template-columns: 180px 1fr; gap: 28px; padding: 34px 0; border-bottom: 1px solid #e2ddd5; }
+.memory-search-month > header { display: grid; align-content: start; gap: 7px; position: sticky; top: 110px; height: max-content; }
+.memory-search-month > header span { color: #435752; font: 600 21px "Noto Serif SC", serif; }
+.memory-search-month > header small { color: #9aa29d; font-size: 9px; }
+.memory-search-month-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
+.memory-search-result { position: relative; min-width: 0; }
+.memory-search-result .memory-card { width: 100%; }
+.memory-search-copy-links { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 4px 0; }
+.memory-search-copy-links span { padding: 5px 8px; border-radius: 999px; background: #f1ebe2; color: #856f5b; font-size: 9px; }
+.memory-search-missing-image { position: absolute; top: 12px; left: 12px; padding: 6px 8px; border-radius: 7px; background: rgba(44,53,50,.72); color: white; font-size: 9px; pointer-events: none; }
+.memory-search-loading { padding: 18px; color: #7f8c86; text-align: center; font-size: 11px; }
+.memory-search-inline-error { display: flex; align-items: center; justify-content: center; gap: 13px; margin-top: 18px; color: #aa675c; font-size: 11px; }
+.memory-search-sentinel { height: 1px; }
+.memory-search-timeline-actions { display: flex; justify-content: center; gap: 12px; padding: 24px 0; }
+@media (max-width: 760px) {
+  .memory-search-month { grid-template-columns: 1fr; }
+  .memory-search-month > header { position: static; }
+  .memory-search-month-grid { grid-template-columns: 1fr; }
+  .memory-search-browse-all { align-items: stretch; flex-direction: column; }
+  .memory-search-mode { justify-items: start; }
+}
 @media (prefers-reduced-motion: reduce) {
   .summary-story-visual, .summary-story-narration, .summary-story-memories img, .summary-archive-card, .summary-reflection-card, .summary-story-progress i { animation: none !important; transition: none !important; transform: none !important; }
 }

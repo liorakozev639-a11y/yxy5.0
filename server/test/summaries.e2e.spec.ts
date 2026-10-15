@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { MemoriesController } from '../src/memories/memories.controller.js';
+import { MemorySearchService } from '../src/memories/memory-search.service.js';
 import { MemoriesService } from '../src/memories/memories.service.js';
 import { SummariesController, SummaryPreferencesController } from '../src/summaries/summaries.controller.js';
 import { SummariesService } from '../src/summaries/summaries.service.js';
@@ -28,6 +29,7 @@ async function createApp() {
     providers: [
       { provide: SummariesService, useValue: summaries },
       { provide: MemoriesService, useValue: memories },
+      { provide: MemorySearchService, useValue: { search: vi.fn() } },
     ],
   }).compile();
   const app = moduleRef.createNestApplication();

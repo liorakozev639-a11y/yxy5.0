@@ -1,11 +1,18 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { LOCAL_USER_ID } from '../common/local-user.js';
 import { MemoriesService } from './memories.service.js';
-import { CreateMemoryDto, MemoryFilterDto, UpdateMemoryDto, UpdateMemoryEchoSettingDto, UpdateMemorySummarySettingDto } from './memory.dto.js';
+import { MemorySearchService } from './memory-search.service.js';
+import { CreateMemoryDto, MemoryFilterDto, MemorySearchDto, UpdateMemoryDto, UpdateMemoryEchoSettingDto, UpdateMemorySummarySettingDto } from './memory.dto.js';
 
 @Controller('memories')
 export class MemoriesController {
-  constructor(private readonly memoriesService: MemoriesService) {}
+  constructor(
+    private readonly memoriesService: MemoriesService,
+    private readonly memorySearchService: MemorySearchService,
+  ) {}
+
+  @Post('search')
+  search(@Body() input: MemorySearchDto) { return this.memorySearchService.search(LOCAL_USER_ID, input); }
 
   @Post()
   create(@Body() input: CreateMemoryDto) { return this.memoriesService.create(LOCAL_USER_ID, input); }

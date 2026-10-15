@@ -72,8 +72,10 @@ describe('memories API', () => {
     };
     const fakePrisma = {
       appLockSetting: { findUnique: vi.fn(async () => null) },
+      $queryRaw: vi.fn()
+        .mockResolvedValueOnce([{ id: 'memory-1', score: 2, eventAt: row.eventAt }])
+        .mockResolvedValueOnce([{ count: 1n }]),
       memory: {
-        count: vi.fn(async () => 1),
         findMany: vi.fn(async () => [row]),
       },
       $connect: vi.fn(),

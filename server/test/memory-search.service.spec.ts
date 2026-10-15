@@ -1,4 +1,6 @@
+import { BadRequestException } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
+import { decodeMemorySearchCursor } from '../src/memories/memory-search-cursor.js';
 import { MemorySearchService } from '../src/memories/memory-search.service.js';
 
 function memoryRow(index: number) {
@@ -24,68 +26,75 @@ function memoryRow(index: number) {
 }
 
 describe('MemorySearchService', () => {
-  it('builds an AND query scoped to the active memories of one user', async () => {
+  it('hydrates five ranked rows in SQL order and emits a stable continuation cursor', async () => {
+    const ranked = Array.from({ length: 6 }, (_, index) => ({
+      id: `memory-${index + 1}`,
+      score: 3 - index * 0.1,
+      eventAt: new Date(`2026-10-${String(index + 1).padStart(2, '0')}T10:00:00.000Z`),
+    }));
+    const hydrated = [memoryRow(3), memoryRow(1), memoryRow(5), memoryRow(2), memoryRow(4)];
     const prisma = {
-      memory: {
-        count: vi.fn(async () => 1),
-        findMany: vi.fn(async () => [memoryRow(1)]),
-      },
+      $queryRaw: vi.fn()
+        .mockResolvedValueOnce(ranked)
+        .mockResolvedValueOnce([{ count: 12n }]),
+      memory: { findMany: vi.fn(async () => hydrated) },
     };
     const service = new MemorySearchService(prisma as any);
 
-    await service.search('local-user', {
-      from: '2026-10-01T00:00:00.000Z',
-      to: '2026-11-01T00:00:00.000Z',
-      mood: '开心',
-      statusValues: ['散步', '约会'],
-      topicIds: ['topic-love', 'topic-study'],
-      keywords: ['海边', '日落'],
-      sort: 'NEWEST',
-      matchMode: 'EXACT',
-      pageSize: 5,
-    });
+    const result = await service.search('local-user', { keywords: ['海边'], sort: 'RELEVANCE', pageSize: 5 });
 
-    const where = prisma.memory.findMany.mock.calls[0][0].where;
-    expect(where).toMatchObject({
-      userId: 'local-user',
-      deletedAt: null,
-      eventAt: {
-        gte: new Date('2026-10-01T00:00:00.000Z'),
-        lt: new Date('2026-11-01T00:00:00.000Z'),
-      },
-      mood: '开心',
-      statuses: { hasEvery: ['散步', '约会'] },
-    });
-    expect(where.AND).toEqual([
-      { topics: { some: { topicId: 'topic-love' } } },
-      { topics: { some: { topicId: 'topic-study' } } },
-      { OR: [{ title: { contains: '海边', mode: 'insensitive' } }, { note: { contains: '海边', mode: 'insensitive' } }] },
-      { OR: [{ title: { contains: '日落', mode: 'insensitive' } }, { note: { contains: '日落', mode: 'insensitive' } }] },
-    ]);
-    expect(prisma.memory.count).toHaveBeenCalledWith({ where });
-  });
-
-  it('returns five items, a continuation cursor, total count and linked copy names', async () => {
-    const rows = Array.from({ length: 6 }, (_, index) => memoryRow(index + 1));
-    const prisma = {
-      memory: {
-        count: vi.fn(async () => 12),
-        findMany: vi.fn(async () => rows),
-      },
-    };
-    const service = new MemorySearchService(prisma as any);
-
-    const result = await service.search('local-user', { pageSize: 5 });
-
-    expect(prisma.memory.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 6 }));
-    expect(result.items).toHaveLength(5);
-    expect(result.nextCursor).toBe('memory-5');
+    expect(prisma.memory.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: { in: ['memory-1', 'memory-2', 'memory-3', 'memory-4', 'memory-5'] } },
+    }));
+    expect(result.items.map((item) => item.id)).toEqual(['memory-1', 'memory-2', 'memory-3', 'memory-4', 'memory-5']);
     expect(result.total).toBe(12);
     expect(result.items[0]).toMatchObject({
-      id: 'memory-1',
       imageUrl: '/api/media/media-1/file',
       topicIds: ['topic-love'],
       longTermCopies: [{ id: 'copy-love', name: '恋爱长跑' }],
     });
+    expect(decodeMemorySearchCursor(result.nextCursor!)).toEqual({
+      score: ranked[4].score,
+      eventAt: ranked[4].eventAt.toISOString(),
+      id: 'memory-5',
+    });
+  });
+
+  it('rejects an invalid cursor before issuing SQL', async () => {
+    const prisma = { $queryRaw: vi.fn(), memory: { findMany: vi.fn() } };
+    const service = new MemorySearchService(prisma as any);
+
+    await expect(service.search('local-user', { cursor: 'invalid', pageSize: 5 })).rejects.toThrow(BadRequestException);
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+  });
+
+  it('returns at most three positive one-condition relaxation suggestions without broadened rows', async () => {
+    const prisma = {
+      $queryRaw: vi.fn()
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ count: 0n }])
+        .mockResolvedValueOnce([{ count: 2n }])
+        .mockResolvedValueOnce([{ count: 0n }])
+        .mockResolvedValueOnce([{ count: 4n }])
+        .mockResolvedValueOnce([{ count: 6n }]),
+      memory: { findMany: vi.fn() },
+    };
+    const service = new MemorySearchService(prisma as any);
+
+    const result = await service.search('local-user', {
+      mood: '开心',
+      statusValues: ['散步'],
+      topicIds: ['topic-love'],
+      keywords: ['海边'],
+      pageSize: 5,
+    });
+
+    expect(result.items).toEqual([]);
+    expect(prisma.memory.findMany).not.toHaveBeenCalled();
+    expect(result.relaxationSuggestions).toEqual([
+      { field: 'mood', value: '开心', resultCount: 2 },
+      { field: 'topic', value: 'topic-love', resultCount: 4 },
+      { field: 'keyword', value: '海边', resultCount: 6 },
+    ]);
   });
 });

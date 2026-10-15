@@ -1,65 +1,77 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import type { MemorySearchInput, MemorySearchItem, MemorySearchPage } from './memory-search.types.js';
+import { decodeMemorySearchCursor, encodeMemorySearchCursor } from './memory-search-cursor.js';
+import { buildMemorySearchQueries } from './memory-search-query.js';
+import type {
+  MemorySearchInput,
+  MemorySearchItem,
+  MemorySearchPage,
+  MemorySearchRelaxation,
+} from './memory-search.types.js';
+
+type RankedMemory = { id: string; eventAt: Date | string; score: number | string };
+type CountRow = { count: bigint | number | string };
 
 @Injectable()
 export class MemorySearchService {
   constructor(private readonly prisma: PrismaService) {}
 
   async search(userId: string, input: MemorySearchInput): Promise<MemorySearchPage> {
-    const where = this.buildWhere(userId, input);
-    const ascending = input.sort === 'OLDEST';
-    const pageSize = 5;
-    const [rows, total] = await Promise.all([
-      this.prisma.memory.findMany({
-        where,
-        include: {
-          media: true,
-          topics: { include: { topic: true } },
-          copyLinks: { include: { copy: true } },
-        },
-        orderBy: [{ eventAt: ascending ? 'asc' : 'desc' }, { id: ascending ? 'asc' : 'desc' }],
-        ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
-        take: pageSize + 1,
-      }),
-      this.prisma.memory.count({ where }),
+    const cursor = input.cursor ? decodeMemorySearchCursor(input.cursor) : undefined;
+    const queries = buildMemorySearchQueries(userId, input, cursor);
+    const [rankedRows, countRows] = await Promise.all([
+      this.prisma.$queryRaw<RankedMemory[]>(queries.rows),
+      this.prisma.$queryRaw<CountRow[]>(queries.count),
     ]);
+    const total = Number(countRows[0]?.count ?? 0);
+    const pageRows = rankedRows.slice(0, 5);
+    const items = await this.hydrate(pageRows);
+    const hasNext = rankedRows.length > 5;
+    const cursorRow = hasNext ? pageRows.at(-1) : undefined;
+    const relaxationSuggestions = total === 0 && !input.cursor
+      ? await this.findRelaxationSuggestions(userId, input)
+      : [];
 
-    const hasNext = rows.length > pageSize;
-    const items = rows.slice(0, pageSize).map((row) => this.toItem(row));
     return {
       items,
       total,
-      ...(hasNext ? { nextCursor: items.at(-1)?.id } : {}),
+      ...(cursorRow ? {
+        nextCursor: encodeMemorySearchCursor({
+          score: Number(cursorRow.score),
+          eventAt: new Date(cursorRow.eventAt).toISOString(),
+          id: cursorRow.id,
+        }),
+      } : {}),
+      ...(relaxationSuggestions.length ? { relaxationSuggestions } : {}),
     };
   }
 
-  private buildWhere(userId: string, input: MemorySearchInput) {
-    const where: Record<string, unknown> = { userId, deletedAt: null };
-    if (input.from || input.to) {
-      where.eventAt = {
-        ...(input.from ? { gte: new Date(input.from) } : {}),
-        ...(input.to ? { lt: new Date(input.to) } : {}),
-      };
-    }
-    if (input.mood?.trim()) where.mood = input.mood.trim();
-    const statuses = uniqueValues(input.statusValues);
-    if (statuses.length) where.statuses = { hasEvery: statuses };
+  private async hydrate(rankedRows: RankedMemory[]): Promise<MemorySearchItem[]> {
+    if (!rankedRows.length) return [];
+    const ids = rankedRows.map((row) => row.id);
+    const rows = await this.prisma.memory.findMany({
+      where: { id: { in: ids } },
+      include: {
+        media: true,
+        topics: { include: { topic: true } },
+        copyLinks: { include: { copy: true } },
+      },
+    });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    return ids.flatMap((id) => {
+      const row = byId.get(id);
+      return row ? [this.toItem(row)] : [];
+    });
+  }
 
-    const and: Array<Record<string, unknown>> = [];
-    for (const topicId of uniqueValues(input.topicIds)) {
-      and.push({ topics: { some: { topicId } } });
-    }
-    for (const keyword of uniqueValues(input.keywords)) {
-      and.push({
-        OR: [
-          { title: { contains: keyword, mode: 'insensitive' } },
-          { note: { contains: keyword, mode: 'insensitive' } },
-        ],
-      });
-    }
-    if (and.length) where.AND = and;
-    return where;
+  private async findRelaxationSuggestions(userId: string, input: MemorySearchInput): Promise<MemorySearchRelaxation[]> {
+    const candidates = buildRelaxationCandidates(input);
+    const counts = await Promise.all(candidates.map(async (candidate) => {
+      const query = buildMemorySearchQueries(userId, candidate.input).count;
+      const rows = await this.prisma.$queryRaw<CountRow[]>(query);
+      return { ...candidate.suggestion, resultCount: Number(rows[0]?.count ?? 0) };
+    }));
+    return counts.filter((candidate) => candidate.resultCount > 0).slice(0, 3);
   }
 
   private toItem(memory: any): MemorySearchItem {
@@ -91,6 +103,36 @@ export class MemorySearchService {
       updatedAt: memory.updatedAt,
     };
   }
+}
+
+function buildRelaxationCandidates(input: MemorySearchInput): Array<{
+  suggestion: Omit<MemorySearchRelaxation, 'resultCount'>;
+  input: MemorySearchInput;
+}> {
+  const candidates: Array<{ suggestion: Omit<MemorySearchRelaxation, 'resultCount'>; input: MemorySearchInput }> = [];
+  const base = { ...input, cursor: undefined };
+  if (input.from) candidates.push({ suggestion: { field: 'from', value: input.from }, input: { ...base, from: undefined } });
+  if (input.to) candidates.push({ suggestion: { field: 'to', value: input.to }, input: { ...base, to: undefined } });
+  if (input.mood) candidates.push({ suggestion: { field: 'mood', value: input.mood }, input: { ...base, mood: undefined } });
+  for (const value of uniqueValues(input.statusValues)) {
+    candidates.push({
+      suggestion: { field: 'status', value },
+      input: { ...base, statusValues: input.statusValues?.filter((item) => item !== value) },
+    });
+  }
+  for (const value of uniqueValues(input.topicIds)) {
+    candidates.push({
+      suggestion: { field: 'topic', value },
+      input: { ...base, topicIds: input.topicIds?.filter((item) => item !== value) },
+    });
+  }
+  for (const value of uniqueValues(input.keywords)) {
+    candidates.push({
+      suggestion: { field: 'keyword', value },
+      input: { ...base, keywords: input.keywords?.filter((item) => item !== value) },
+    });
+  }
+  return candidates;
 }
 
 function uniqueValues(values?: string[]) {

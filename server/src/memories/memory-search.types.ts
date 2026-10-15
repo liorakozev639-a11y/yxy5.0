@@ -38,4 +38,11 @@ export type MemorySearchPage = {
   items: MemorySearchItem[];
   total: number;
   nextCursor?: string;
+  relaxationSuggestions?: MemorySearchRelaxation[];
+};
+
+export type MemorySearchRelaxation = {
+  field: 'from' | 'to' | 'mood' | 'status' | 'topic' | 'keyword';
+  value: string;
+  resultCount: number;
 };

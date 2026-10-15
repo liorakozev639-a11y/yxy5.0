@@ -69,4 +69,45 @@ describe('ApiMemoryRepository', () => {
       body: JSON.stringify({ summaryExcluded: true }),
     });
   });
+
+  it('posts only confirmed search criteria and maps linked copies', async () => {
+    const request = vi.fn(async () => ({
+      items: [{
+        id: 'memory-1', mediaId: 'media-1', imageUrl: '/api/media/media-1/file', title: '海边日落', note: '一起散步', mood: '开心',
+        eventAt: '2026-10-12T10:00:00.000Z', timezone: 'Asia/Shanghai', statuses: ['散步'], topicIds: ['topic-love'],
+        topics: [{ id: 'topic-love', name: '恋爱' }], longTermCopies: [{ id: 'copy-love', name: '恋爱长跑' }],
+        createdAt: '2026-10-12T10:00:00.000Z', updatedAt: '2026-10-12T10:00:00.000Z',
+      }],
+      total: 1,
+      relaxationSuggestions: [],
+    }));
+    const repository = new ApiMemoryRepository({ request } as never);
+
+    const result = await repository.search({
+      from: '2026-10-01T00:00:00.000Z',
+      mood: '开心',
+      keywords: ['海边'],
+      sort: 'RELEVANCE',
+      matchMode: 'EXACT',
+      pageSize: 5,
+    });
+
+    expect(request).toHaveBeenCalledWith('/api/memories/search', {
+      method: 'POST',
+      body: JSON.stringify({
+        from: '2026-10-01T00:00:00.000Z',
+        mood: '开心',
+        keywords: ['海边'],
+        sort: 'RELEVANCE',
+        matchMode: 'EXACT',
+        pageSize: 5,
+      }),
+    });
+    const [, options] = request.mock.calls[0] as unknown as [string, { body: string }];
+    expect(JSON.parse(options.body)).not.toHaveProperty('rawInput');
+    expect(result).toMatchObject({
+      total: 1,
+      items: [{ id: 'memory-1', longTermCopies: [{ id: 'copy-love', name: '恋爱长跑' }] }],
+    });
+  });
 });

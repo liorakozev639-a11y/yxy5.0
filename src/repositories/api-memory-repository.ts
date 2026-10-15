@@ -1,4 +1,5 @@
 import type { Memory, MemoryDraft } from '../domain/memory';
+import type { MemorySearchPage, MemorySearchRequest } from '../domain/memory-search';
 import { ApiClient } from '../api/client';
 
 export type ApiMemory = {
@@ -16,11 +17,18 @@ export type ApiMemory = {
   topics: Array<{ id: string; name: string }>;
   echoExcluded?: boolean;
   summaryExcluded?: boolean;
+  longTermCopies?: Array<{ id: string; name: string }>;
   createdAt: string;
   updatedAt: string;
 };
 
 type MemoryPage = { items: ApiMemory[]; nextCursor?: string };
+type ApiMemorySearchPage = {
+  items: ApiMemory[];
+  total: number;
+  nextCursor?: string;
+  relaxationSuggestions?: MemorySearchPage['relaxationSuggestions'];
+};
 
 export class ApiMemoryRepository {
   constructor(private readonly client: ApiClient) {}
@@ -49,6 +57,34 @@ export class ApiMemoryRepository {
   async list(query = ''): Promise<Memory[]> {
     const page = await this.client.request<MemoryPage>(`/api/memories${query ? `?${query}` : ''}`);
     return page.items.map((item) => this.map(item));
+  }
+
+  async search(input: MemorySearchRequest): Promise<MemorySearchPage> {
+    const payload: MemorySearchRequest = {
+      ...(input.from ? { from: input.from } : {}),
+      ...(input.to ? { to: input.to } : {}),
+      ...(input.mood ? { mood: input.mood } : {}),
+      ...(input.statusValues?.length ? { statusValues: input.statusValues } : {}),
+      ...(input.topicIds?.length ? { topicIds: input.topicIds } : {}),
+      ...(input.keywords?.length ? { keywords: input.keywords } : {}),
+      ...(input.sort ? { sort: input.sort } : {}),
+      ...(input.matchMode ? { matchMode: input.matchMode } : {}),
+      ...(input.cursor ? { cursor: input.cursor } : {}),
+      pageSize: 5,
+    };
+    const page = await this.client.request<ApiMemorySearchPage>('/api/memories/search', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return {
+      items: page.items.map((item) => ({
+        ...this.map(item),
+        ...(item.longTermCopies?.length ? { longTermCopies: item.longTermCopies } : {}),
+      })),
+      total: page.total,
+      ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}),
+      ...(page.relaxationSuggestions?.length ? { relaxationSuggestions: page.relaxationSuggestions } : {}),
+    };
   }
 
   async put(memory: Memory): Promise<Memory> {
@@ -125,5 +161,5 @@ export function mapApiMemory(item: ApiMemory): Memory {
 
 function unique(values: string[]) { return [...new Set(values.map((value) => value.trim()).filter(Boolean))]; }
 
-export type MemoryRepositoryLike = Pick<ApiMemoryRepository, 'get' | 'getAll' | 'put' | 'remove' | 'setSummaryExcluded'>;
+export type MemoryRepositoryLike = Pick<ApiMemoryRepository, 'get' | 'getAll' | 'put' | 'remove' | 'setSummaryExcluded' | 'search'>;
 export type MemoryDraftWithApi = MemoryDraft;

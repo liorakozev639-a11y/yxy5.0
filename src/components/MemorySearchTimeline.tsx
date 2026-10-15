@@ -41,9 +41,9 @@ export function MemorySearchTimeline({
           <header><span>{group.label}</span><small>{group.items.length} 段记忆</small></header>
           <div className="memory-search-month-grid">
             {group.items.map((memory) => (
-              <article className="memory-search-result" key={memory.id} id={`memory-search-${memory.id}`}>
-                <MemoryCard memory={memory} imageUrl={memory.imageUrl || MISSING_IMAGE} onClick={() => onSelect(memory.id)} />
-                {!memory.imageUrl && <span className="memory-search-missing-image">照片暂时无法显示</span>}
+              <article className={`memory-search-result${memory.imageUrl ? '' : ' is-image-missing'}`} key={memory.id} id={`memory-search-${memory.id}`}>
+                <MemoryCard memory={memory} imageUrl={memory.imageUrl || MISSING_IMAGE} fallbackImageUrl={MISSING_IMAGE} onImageError={(image) => image.closest('.memory-search-result')?.classList.add('is-image-missing')} onClick={() => onSelect(memory.id)} />
+                <span className="memory-search-missing-image" aria-live="polite">照片暂时无法显示</span>
                 {memory.longTermCopies?.length ? <div className="memory-search-copy-links" aria-label="关联长期副本">
                   {memory.longTermCopies.map((copy) => <span key={copy.id}>来自「{copy.name}」</span>)}
                 </div> : null}

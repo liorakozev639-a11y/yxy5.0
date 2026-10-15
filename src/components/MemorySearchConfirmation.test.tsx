@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import type { ReactElement, ReactNode } from 'react';
+import { describe, expect, it, vi } from 'vitest';
 import { MemorySearchConfirmation } from './MemorySearchConfirmation';
 
 const parsed = {
@@ -23,4 +24,22 @@ describe('MemorySearchConfirmation', () => {
     expect(html).toMatch(/<button[^>]*>开始寻迹<\/button>/);
     expect(html).not.toMatch(/<button[^>]*disabled=""[^>]*>开始寻迹<\/button>/);
   });
+
+  it('lets the user remove a recognized condition before confirmation', () => {
+    const onRemove = vi.fn();
+    const tree = MemorySearchConfirmation({ parsed, confirmed: false, onConfirmChange: () => undefined, onStart: () => undefined, onRemove });
+    findButton(tree, '移除条件：海边').props.onClick();
+    expect(onRemove).toHaveBeenCalledWith('keyword', '海边');
+  });
 });
+
+function findButton(node: ReactNode, label: string): ReactElement<any> {
+  if (!node || typeof node !== 'object') throw new Error(`找不到按钮：${label}`);
+  const element = node as ReactElement<any>;
+  if (element.type === 'button' && element.props?.['aria-label'] === label) return element;
+  const children = Array.isArray(element.props?.children) ? element.props.children : [element.props?.children];
+  for (const child of children) {
+    try { return findButton(child, label); } catch { /* continue */ }
+  }
+  throw new Error(`找不到按钮：${label}`);
+}

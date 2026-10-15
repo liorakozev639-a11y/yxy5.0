@@ -60,4 +60,11 @@ describe('request DTO validation', () => {
     });
     expect(result).not.toHaveProperty('unknown');
   });
+
+  it.each([
+    [{ from: '2026-02-30T00:00:00.000Z' }, 'an impossible calendar date'],
+    [{ from: '2026-10-15T00:00:00.000Z', to: '2026-10-01T00:00:00.000Z' }, 'a reversed time range'],
+  ])('rejects memory search input containing %s (%s)', async (input) => {
+    await expect(pipe.transform(input, { type: 'body', metatype: MemorySearchDto })).rejects.toThrow();
+  });
 });

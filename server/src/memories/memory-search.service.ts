@@ -17,8 +17,9 @@ export class MemorySearchService {
   constructor(private readonly prisma: PrismaService) {}
 
   async search(userId: string, input: MemorySearchInput): Promise<MemorySearchPage> {
-    const cursor = input.cursor ? decodeMemorySearchCursor(input.cursor) : undefined;
-    const queries = buildMemorySearchQueries(userId, input, cursor);
+    const normalizedInput = normalizeMemorySearchInput(input);
+    const cursor = normalizedInput.cursor ? decodeMemorySearchCursor(normalizedInput.cursor) : undefined;
+    const queries = buildMemorySearchQueries(userId, normalizedInput, cursor);
     const [rankedRows, countRows] = await Promise.all([
       this.prisma.$queryRaw<RankedMemory[]>(queries.rows),
       this.prisma.$queryRaw<CountRow[]>(queries.count),
@@ -28,8 +29,8 @@ export class MemorySearchService {
     const items = await this.hydrate(pageRows);
     const hasNext = rankedRows.length > 5;
     const cursorRow = hasNext ? pageRows.at(-1) : undefined;
-    const relaxationSuggestions = total === 0 && !input.cursor
-      ? await this.findRelaxationSuggestions(userId, input)
+    const relaxationSuggestions = total === 0 && !normalizedInput.cursor
+      ? await this.findRelaxationSuggestions(userId, normalizedInput)
       : [];
 
     return {
@@ -103,6 +104,16 @@ export class MemorySearchService {
       updatedAt: memory.updatedAt,
     };
   }
+}
+
+export function normalizeMemorySearchInput(input: MemorySearchInput): MemorySearchInput {
+  const hasKeywords = (input.keywords ?? []).some((keyword) => keyword.trim().length > 0);
+  return {
+    ...input,
+    sort: input.sort ?? (hasKeywords ? 'RELEVANCE' : 'NEWEST'),
+    matchMode: input.matchMode ?? 'EXACT',
+    pageSize: 5,
+  };
 }
 
 function buildRelaxationCandidates(input: MemorySearchInput): Array<{

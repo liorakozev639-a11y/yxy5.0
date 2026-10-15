@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MemorySearchCriteria, MemorySearchItem, MemorySearchRelaxation, MemorySearchRequest, ParsedMemorySearch, SearchCatalog } from '../domain/memory-search';
 import type { MemorySearchState } from '../domain/memory-search-state';
-import type { ValidatedMemorySearchHistoryEntry } from '../storage/memory-search-history';
+import { sanitizeHistoryCriteria, type ValidatedMemorySearchHistoryEntry } from '../storage/memory-search-history';
 import { MemorySearchConfirmation } from './MemorySearchConfirmation';
 import { MemorySearchFilters } from './MemorySearchFilters';
 import { MemorySearchInput } from './MemorySearchInput';
@@ -30,12 +30,20 @@ export function MemorySearchPage({ catalog, flow, onSelect }: {
 }) {
   const [criteria, setCriteria] = useState<MemorySearchCriteria>(() => flow.parsed ? parsedToCriteria(flow.parsed) : requestToCriteria(flow.request));
   const [confirmed, setConfirmed] = useState(false);
+  const [historyNotice, setHistoryNotice] = useState('');
+  const autoBrowseStarted = useRef(false);
 
   useEffect(() => {
     if (!flow.parsed) return;
     setCriteria({ ...flow.parsed.criteria, ...(flow.parsed.pendingKeywords.length ? { keywords: flow.parsed.pendingKeywords } : {}) });
     setConfirmed(false);
   }, [flow.parsed]);
+
+  useEffect(() => {
+    if (autoBrowseStarted.current || !shouldAutoBrowseMemories(flow, criteria)) return;
+    autoBrowseStarted.current = true;
+    void flow.confirm({}, '浏览全部记忆');
+  }, [criteria, flow]);
 
   const hasCriteria = criteriaCount(criteria) > 0;
   const confirmation = useMemo(() => criteriaToParsed(criteria, catalog), [catalog, criteria]);
@@ -45,18 +53,25 @@ export function MemorySearchPage({ catalog, flow, onSelect }: {
   function updateCriteria(next: MemorySearchCriteria) {
     setCriteria(next);
     setConfirmed(false);
+    setHistoryNotice('');
   }
 
   function parseInput(text: string) {
     const result = flow.parse(text);
     setCriteria({ ...result.criteria, ...(result.pendingKeywords.length ? { keywords: result.pendingKeywords } : {}) });
     setConfirmed(false);
+    setHistoryNotice('');
   }
 
   function useHistory(entry: ValidatedMemorySearchHistoryEntry) {
     flow.setInputText(entry.displayText);
-    setCriteria(entry.criteria);
+    setCriteria(cleanReusedHistoryCriteria(entry));
     setConfirmed(false);
+    setHistoryNotice(hasInvalidHistoryValues(entry) ? '部分失效条件已移除，请重新确认后再寻迹。' : '');
+  }
+
+  function removeCondition(type: 'time' | 'mood' | 'status' | 'topic' | 'keyword', label: string) {
+    updateCriteria(removeSearchCriterion(criteria, type, label, catalog));
   }
 
   return (
@@ -76,9 +91,10 @@ export function MemorySearchPage({ catalog, flow, onSelect }: {
         onClearHistory={flow.clearHistory}
       />
       <MemorySearchFilters value={criteria} catalog={catalog} onChange={updateCriteria} />
+      {historyNotice && <p className="memory-search-history-notice" role="status">{historyNotice}</p>}
 
-      {(hasCriteria || flow.parsed) ? (
-        <MemorySearchConfirmation parsed={confirmation} confirmed={confirmed} onConfirmChange={setConfirmed} onStart={() => void flow.confirm(criteria)} />
+      {(hasCriteria || flow.parsed || historyNotice) ? (
+        <MemorySearchConfirmation parsed={confirmation} confirmed={confirmed} onConfirmChange={setConfirmed} onRemove={removeCondition} onStart={() => void flow.confirm(criteria)} />
       ) : !hasSearched ? (
         <div className="memory-search-browse-all"><p>不设置条件时，会按发生时间浏览所有原始记忆。</p><button className="primary-button" type="button" onClick={() => void flow.confirm({}, '浏览全部记忆')}>浏览全部记忆</button></div>
       ) : null}
@@ -108,6 +124,27 @@ export function MemorySearchPage({ catalog, flow, onSelect }: {
       />}
     </section>
   );
+}
+
+export function shouldAutoBrowseMemories(flow: Pick<MemorySearchFlow, 'request' | 'parsed' | 'status'>, criteria: MemorySearchCriteria) {
+  return !flow.request && !flow.parsed && flow.status === 'idle' && criteriaCount(criteria) === 0;
+}
+
+export function cleanReusedHistoryCriteria(entry: ValidatedMemorySearchHistoryEntry) {
+  return sanitizeHistoryCriteria(entry);
+}
+
+function hasInvalidHistoryValues(entry: ValidatedMemorySearchHistoryEntry) {
+  return entry.invalidMood || entry.invalidStatusValues.length > 0 || entry.invalidTopicIds.length > 0;
+}
+
+export function removeSearchCriterion(criteria: MemorySearchCriteria, type: 'time' | 'mood' | 'status' | 'topic' | 'keyword', label: string, catalog: SearchCatalog) {
+  if (type === 'time') return { ...criteria, from: undefined, to: undefined };
+  if (type === 'mood') return { ...criteria, mood: undefined };
+  if (type === 'status') return { ...criteria, statusValues: criteria.statusValues?.filter((value) => value !== label) };
+  if (type === 'keyword') return { ...criteria, keywords: criteria.keywords?.filter((value) => value !== label) };
+  const topicId = catalog.topics.find((topic) => topic.name === label)?.id ?? label;
+  return { ...criteria, topicIds: criteria.topicIds?.filter((value) => value !== topicId) };
 }
 
 function requestToCriteria(request?: MemorySearchRequest): MemorySearchCriteria {

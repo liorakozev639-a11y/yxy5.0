@@ -40,6 +40,42 @@ function KeywordsTotalLength(maximum: number): PropertyDecorator {
   });
 }
 
+function IsRealIsoDate(): PropertyDecorator {
+  return ValidateBy({
+    name: 'isRealIsoDate',
+    validator: {
+      validate(value: unknown) {
+        if (typeof value !== 'string') return true;
+        const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T/u);
+        if (!match || Number.isNaN(Date.parse(value))) return false;
+        const year = Number(match[1]);
+        const month = Number(match[2]);
+        const day = Number(match[3]);
+        const marker = new Date(Date.UTC(year, month - 1, day));
+        return marker.getUTCFullYear() === year && marker.getUTCMonth() === month - 1 && marker.getUTCDate() === day;
+      },
+      defaultMessage: () => '日期不存在',
+    },
+  });
+}
+
+function IsAfter(property: string): PropertyDecorator {
+  return ValidateBy({
+    name: 'isAfter',
+    constraints: [property],
+    validator: {
+      validate(value: unknown, args) {
+        if (value === undefined || value === null) return true;
+        if (!args) return false;
+        const from = (args.object as Record<string, unknown>)[property];
+        if (typeof value !== 'string' || typeof from !== 'string') return true;
+        return Date.parse(value) > Date.parse(from);
+      },
+      defaultMessage: () => '结束日期必须晚于开始日期',
+    },
+  });
+}
+
 export class CreateMemoryDto {
   @IsString() mediaId!: string;
   @IsOptional() @IsString() @MaxLength(120) title?: string;
@@ -73,8 +109,8 @@ export class MemoryFilterDto {
 }
 
 export class MemorySearchDto {
-  @IsOptional() @IsISO8601() from?: string;
-  @IsOptional() @IsISO8601() to?: string;
+  @IsOptional() @IsISO8601() @IsRealIsoDate() from?: string;
+  @IsOptional() @IsISO8601() @IsRealIsoDate() @IsAfter('from') to?: string;
   @IsOptional() @IsString() @MaxLength(40) mood?: string;
   @IsOptional() @IsArray() @ArrayUnique() @ArrayMaxSize(10) @IsString({ each: true }) statusValues?: string[];
   @IsOptional() @IsArray() @ArrayUnique() @ArrayMaxSize(10) @IsString({ each: true }) topicIds?: string[];

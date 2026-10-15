@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import type { MemorySearchItem } from '../domain/memory-search';
-import { MemorySearchPage } from './MemorySearchPage';
+import { cleanReusedHistoryCriteria, MemorySearchPage, shouldAutoBrowseMemories } from './MemorySearchPage';
 
 const catalog = { moods: ['开心'], statuses: ['散步'], topics: [{ id: 'topic-love', name: '恋爱' }] };
 const baseFlow = {
@@ -61,5 +61,18 @@ describe('MemorySearchPage', () => {
     expect(errorHtml).toContain('还在这里');
     expect(errorHtml).toContain('当前结果可能不完整');
     expect(errorHtml).toContain('重试加载');
+  });
+
+  it('loads all memories automatically when the page opens without conditions', () => {
+    expect(shouldAutoBrowseMemories(baseFlow, {})).toBe(true);
+    expect(shouldAutoBrowseMemories({ ...baseFlow, request: { pageSize: 5 } }, {})).toBe(false);
+  });
+
+  it('strips invalid history labels before reusing the search', () => {
+    expect(cleanReusedHistoryCriteria({
+      id: 'history-1', displayText: '旧条件', createdAt: '2026-10-01T00:00:00.000Z',
+      criteria: { mood: '旧心情', statusValues: ['散步', '旧状态'], topicIds: ['topic-love', 'old-topic'] },
+      invalidMood: true, invalidStatusValues: ['旧状态'], invalidTopicIds: ['old-topic'],
+    })).toEqual({ statusValues: ['散步'], topicIds: ['topic-love'] });
   });
 });

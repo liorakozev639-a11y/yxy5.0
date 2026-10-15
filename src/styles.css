@@ -33,7 +33,9 @@ h1, h2, p { margin: 0; }
 .search-box span { font-size: 21px; line-height: 1; }
 .search-box input { width: 100%; border: 0; outline: 0; background: transparent; color: #25302f; font-size: 12px; }
 .search-box input::placeholder { color: #a4aaa6; }
-.home-search-entry button { flex: 0 0 auto; padding: 6px 9px; border: 0; border-radius: 999px; background: #e6efeb; color: #54817f; font-size: 10px; }
+.home-search-entry { border-top: 0; border-inline: 0; background: transparent; text-align: left; }
+.home-search-entry .home-search-placeholder { width: 100%; color: #a4aaa6; font-size: 12px; }
+.home-search-entry strong { flex: 0 0 auto; margin: 0; padding: 6px 9px; border-radius: 999px; background: #e6efeb; color: #54817f; font-size: 10px; }
 .home-summary-card { margin: 20px 0 34px; padding: 28px 30px; border: 1px solid #ded8ce; border-radius: 20px; background: linear-gradient(135deg, #f4eee5, #edf4f0); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .home-summary-card h2 { margin: 9px 0 8px; font: 600 25px "Noto Serif SC", serif; }
 .home-summary-card p { color: #7e8883; font-size: 13px; line-height: 1.7; }
@@ -453,7 +455,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus
 .memory-search-result .memory-card { width: 100%; }
 .memory-search-copy-links { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 4px 0; }
 .memory-search-copy-links span { padding: 5px 8px; border-radius: 999px; background: #f1ebe2; color: #856f5b; font-size: 9px; }
-.memory-search-missing-image { position: absolute; top: 12px; left: 12px; padding: 6px 8px; border-radius: 7px; background: rgba(44,53,50,.72); color: white; font-size: 9px; pointer-events: none; }
+.memory-search-missing-image { display: none; position: absolute; top: 12px; left: 12px; padding: 6px 8px; border-radius: 7px; background: rgba(44,53,50,.72); color: white; font-size: 9px; pointer-events: none; }
+.memory-search-result.is-image-missing .memory-search-missing-image { display: block; }
 .memory-search-loading { padding: 18px; color: #7f8c86; text-align: center; font-size: 11px; }
 .memory-search-inline-error { display: flex; align-items: center; justify-content: center; gap: 13px; margin-top: 18px; color: #aa675c; font-size: 11px; }
 .memory-search-sentinel { height: 1px; }
@@ -492,11 +495,18 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus
 .memory-search-filter-group { margin: 20px 0 0; padding: 0; border: 0; }
 .memory-search-filter-group legend { margin-bottom: 10px; color: #61706a; font-size: 11px; font-weight: 700; }
 .memory-search-filter-group > div { display: flex; flex-wrap: wrap; gap: 7px; }
+.memory-search-keyword-form { display: flex; gap: 8px; max-width: 520px; }
+.memory-search-keyword-form input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid #dedfd8; border-radius: 9px; background: #fffdfa; color: #40504b; }
+.memory-search-keyword-list { margin-top: 9px; }
+.memory-search-keyword-list button { display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; border: 0; border-radius: 999px; background: #edf2ee; color: #4f706a; font-size: 10px; }
+.memory-search-keyword-list button span, .memory-search-chip button { color: #91a09b; font-size: 14px; }
 .memory-search-sort { max-width: 230px; margin-top: 20px; }
 .memory-search-confirmation { margin-top: 16px; }
 .memory-search-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
 .memory-search-chip { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border-radius: 999px; background: #edf2ee; color: #4f706a; font-size: 11px; }
 .memory-search-chip small { color: #94a19c; font-size: 8px; text-transform: uppercase; }
+.memory-search-chip button { width: 18px; height: 18px; padding: 0; border: 0; background: transparent; line-height: 1; }
+.memory-search-history-notice { margin: 12px 4px 0; color: #a16f62; font-size: 10px; }
 .memory-search-all { color: #8c9691; font-size: 11px; }
 .memory-search-consent { display: flex; align-items: center; gap: 9px; margin: 18px 0; color: #63706b; font-size: 11px; }
 .memory-search-consent input { width: 17px; height: 17px; accent-color: #6a989a; }

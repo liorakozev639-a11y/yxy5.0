@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { SearchCatalog } from '../domain/memory-search';
-import { createMemorySearchHistory, type MemorySearchHistoryEntry, type StorageLike } from './memory-search-history';
+import { createMemorySearchHistory, sanitizeHistoryCriteria, type MemorySearchHistoryEntry, type StorageLike } from './memory-search-history';
 
 class MemoryStorage implements StorageLike {
   values = new Map<string, string>();
@@ -73,6 +73,21 @@ describe('memory search history', () => {
       invalidMood: false,
       invalidStatusValues: ['旅行'],
       invalidTopicIds: ['topic-deleted'],
+    });
+  });
+
+  it('removes invalid catalog values before a history search is reused', () => {
+    const validated = {
+      ...entry(1, { criteria: { mood: '已删除心情', statusValues: ['学习', '旅行'], topicIds: ['topic-exam', 'topic-deleted'], keywords: ['海边'] } }),
+      invalidMood: true,
+      invalidStatusValues: ['旅行'],
+      invalidTopicIds: ['topic-deleted'],
+    };
+
+    expect(sanitizeHistoryCriteria(validated)).toEqual({
+      statusValues: ['学习'],
+      topicIds: ['topic-exam'],
+      keywords: ['海边'],
     });
   });
 });

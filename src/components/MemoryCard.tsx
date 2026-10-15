@@ -5,13 +5,21 @@ type MemoryCardProps = {
   memory: Memory;
   imageUrl: string;
   onClick: () => void;
+  fallbackImageUrl?: string;
+  onImageError?: (image: HTMLImageElement) => void;
 };
 
-export function MemoryCard({ memory, imageUrl, onClick }: MemoryCardProps) {
+export function MemoryCard({ memory, imageUrl, onClick, fallbackImageUrl, onImageError }: MemoryCardProps) {
   return (
     <button className="memory-card" onClick={onClick} type="button">
       <div className="card-image-wrap">
-        <img alt={memory.title || memory.imageName} className="card-image" src={imageUrl} />
+        <img alt={memory.title || memory.imageName} className="card-image" src={imageUrl} onError={fallbackImageUrl ? (event) => {
+          const image = event.currentTarget;
+          image.onerror = null;
+          image.src = fallbackImageUrl;
+          image.alt = '照片暂时无法显示';
+          onImageError?.(image);
+        } : undefined} />
       </div>
       <div className="card-copy">
         <span className="eyebrow">{formatDateTime(memory.eventAt)}</span>

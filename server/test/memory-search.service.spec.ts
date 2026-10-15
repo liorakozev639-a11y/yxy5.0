@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
 import { decodeMemorySearchCursor } from '../src/memories/memory-search-cursor.js';
-import { MemorySearchService } from '../src/memories/memory-search.service.js';
+import { MemorySearchService, normalizeMemorySearchInput } from '../src/memories/memory-search.service.js';
 
 function memoryRow(index: number) {
   return {
@@ -26,6 +26,10 @@ function memoryRow(index: number) {
 }
 
 describe('MemorySearchService', () => {
+  it('defaults keyword searches to relevance and filter-only searches to newest', () => {
+    expect(normalizeMemorySearchInput({ keywords: ['海边'], pageSize: 5 })).toMatchObject({ sort: 'RELEVANCE', matchMode: 'EXACT' });
+    expect(normalizeMemorySearchInput({ mood: '开心', pageSize: 5 })).toMatchObject({ sort: 'NEWEST', matchMode: 'EXACT' });
+  });
   it('hydrates five ranked rows in SQL order and emits a stable continuation cursor', async () => {
     const ranked = Array.from({ length: 6 }, (_, index) => ({
       id: `memory-${index + 1}`,

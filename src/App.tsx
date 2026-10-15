@@ -101,7 +101,6 @@ export default function App() {
   const searchHistory = useMemo(() => createMemorySearchHistory(localStorage), []);
   const [state, dispatch] = useReducer(appReducer, initialState);
   const [view, setView] = useState<View>('home');
-  const [query, setQuery] = useState('');
   const [editor, setEditor] = useState<'new' | Memory>();
   const [customMoods, setCustomMoods] = useState(() => readList('photo-memory-custom-moods'));
   const [customStatuses, setCustomStatuses] = useState(() => readList('photo-memory-custom-statuses'));
@@ -425,7 +424,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="topbar"><button className="brand" onClick={() => { setView('home'); setQuery(''); }} type="button"><span className="brand-mark">✦</span><span>照片记忆本<small>PHOTO MEMORY</small></span></button><div className="topbar-tools"><div className="topbar-note">安全保存到你的本地数据库</div><button className="vault-entry" onClick={() => setView('vault')} type="button"><span>◇</span> 数据保险箱</button></div><button className="mobile-add" onClick={() => setEditor('new')} type="button">＋</button></header>
+      <header className="topbar"><button className="brand" onClick={() => setView('home')} type="button"><span className="brand-mark">✦</span><span>照片记忆本<small>PHOTO MEMORY</small></span></button><div className="topbar-tools"><div className="topbar-note">安全保存到你的本地数据库</div><button className="vault-entry" onClick={() => setView('vault')} type="button"><span>◇</span> 数据保险箱</button></div><button className="mobile-add" onClick={() => setEditor('new')} type="button">＋</button></header>
       <main className="main-content">
         {state.error && <div className="error-banner">{state.error}</div>}
         {view === 'home' && <HomeView
@@ -437,9 +436,7 @@ export default function App() {
           memories={state.memories}
           onAdd={() => setEditor('new')}
           onOpenSearch={openMemorySearch}
-          onQueryChange={setQuery}
           onSelect={(id) => dispatch({ type: 'selected', id })}
-          query={query}
         />}
         {view === 'search' && <MemorySearchPage catalog={searchCatalog} flow={memorySearch} onSelect={openSearchMemory} />}
         {view === 'important' && <ImportantDaysView days={importantDays} imageUrls={imageUrls} memories={state.memories} onCreate={createImportantDay} onDelete={deleteImportantDay} onSelectMemory={(id) => dispatch({ type: 'selected', id })} onUpdate={updateImportantDay} />}

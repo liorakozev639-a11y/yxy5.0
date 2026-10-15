@@ -52,6 +52,22 @@ describe('parseMemorySearchInput', () => {
     expect(parsed.pendingKeywords).toEqual(['操场']);
   });
 
+  it('keeps whitespace-separated unknown text as independent AND keywords', () => {
+    const parsed = parseMemorySearchInput('上个月 海边 日落', catalog, now);
+    expect(parsed.pendingKeywords).toEqual(['海边', '日落']);
+  });
+
+  it('rejects more than five inferred keywords before confirmation', () => {
+    expect(() => parseMemorySearchInput('一 二 三 四 五 六', catalog, now)).toThrow('最多添加5个关键词');
+  });
+
+  it.each(['2026年2月30日', '2026年13月', '2026年10月15日至2026年10月1日'])(
+    'rejects an impossible or reversed explicit date: %s',
+    (phrase) => {
+      expect(() => parseMemorySearchInput(phrase, catalog, now)).toThrow('日期');
+    },
+  );
+
   it('does not guess unsupported seasons or vague time expressions', () => {
     expect(parseMemorySearchInput('去年秋天那段时间的晚霞', catalog, now)).toMatchObject({
       criteria: { from: '2024-12-31T16:00:00.000Z', to: '2025-12-31T16:00:00.000Z' },

@@ -42,9 +42,11 @@ export function parseMemorySearchInput(input: string, catalog: SearchCatalog, no
   if (topicIds.length) criteria.topicIds = topicIds;
 
   const pending = cleanupRemainder(remainder);
+  const pendingKeywords = pending ? pending.split(/\s+/u).filter(Boolean) : [];
+  normalizeMemorySearchCriteria({ keywords: pendingKeywords });
   return {
     criteria: normalizeMemorySearchCriteria(criteria),
-    pendingKeywords: pending ? [pending] : [],
+    pendingKeywords,
     recognized,
   };
 }
@@ -54,14 +56,16 @@ type TimeMatch = { matched: string; label: string; from: string; to: string };
 function extractTime(input: string, now: Date): TimeMatch | undefined {
   const range = input.match(/(\d{4})年(\d{1,2})月(\d{1,2})日?\s*(?:至|到|—|-)\s*(\d{4})年(\d{1,2})月(\d{1,2})日?/);
   if (range) {
-    const start = localDate(Number(range[1]), Number(range[2]), Number(range[3]));
-    const end = addDays(localDate(Number(range[4]), Number(range[5]), Number(range[6])), 1);
+    const start = strictLocalDate(Number(range[1]), Number(range[2]), Number(range[3]));
+    const endDate = strictLocalDate(Number(range[4]), Number(range[5]), Number(range[6]));
+    if (start.getTime() > endDate.getTime()) throw new Error('日期范围的开始日期不能晚于结束日期');
+    const end = addDays(endDate, 1);
     return timeMatch(range[0], start, end);
   }
 
   const exactDate = input.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
   if (exactDate) {
-    const start = localDate(Number(exactDate[1]), Number(exactDate[2]), Number(exactDate[3]));
+    const start = strictLocalDate(Number(exactDate[1]), Number(exactDate[2]), Number(exactDate[3]));
     return timeMatch(exactDate[0], start, addDays(start, 1));
   }
 
@@ -69,7 +73,8 @@ function extractTime(input: string, now: Date): TimeMatch | undefined {
   if (exactMonth) {
     const year = Number(exactMonth[1]);
     const month = Number(exactMonth[2]);
-    return timeMatch(exactMonth[0], localDate(year, month, 1), localDate(year, month + 1, 1));
+    const start = strictLocalDate(year, month, 1);
+    return timeMatch(exactMonth[0], start, localDate(year, month + 1, 1));
   }
 
   const recent = input.match(/最近\s*(\d{1,3})\s*天/);
@@ -137,6 +142,16 @@ function localDate(year: number, month: number, day: number): Date {
   return new Date(Date.UTC(year, month - 1, day, -SHANGHAI_OFFSET_HOURS));
 }
 
+function strictLocalDate(year: number, month: number, day: number): Date {
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day) || month < 1 || month > 12 || day < 1 || day > 31) {
+    throw new Error('日期格式无效，请检查年月日');
+  }
+  const value = localDate(year, month, day);
+  const parts = shanghaiParts(value);
+  if (parts.year !== year || parts.month !== month || parts.day !== day) throw new Error('日期不存在，请重新输入');
+  return value;
+}
+
 function addDays(value: Date, days: number): Date {
   return new Date(value.getTime() + days * 24 * 60 * 60 * 1000);
 }
@@ -159,6 +174,6 @@ function cleanupRemainder(value: string): string {
     .replace(/\s*(?:记录|记忆|照片)\s*$/u, '')
     .replace(/^\s*(?:时|期间|后|里|中)+/u, '')
     .replace(/的/g, '')
-    .replace(/\s+/g, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }

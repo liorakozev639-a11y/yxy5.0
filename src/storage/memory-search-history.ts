@@ -23,6 +23,15 @@ export type ValidatedMemorySearchHistoryEntry = MemorySearchHistoryEntry & {
   invalidTopicIds: string[];
 };
 
+export function sanitizeHistoryCriteria(entry: ValidatedMemorySearchHistoryEntry): MemorySearchCriteria {
+  return normalizeMemorySearchCriteria({
+    ...entry.criteria,
+    mood: entry.invalidMood ? undefined : entry.criteria.mood,
+    statusValues: entry.criteria.statusValues?.filter((value) => !entry.invalidStatusValues.includes(value)),
+    topicIds: entry.criteria.topicIds?.filter((value) => !entry.invalidTopicIds.includes(value)),
+  });
+}
+
 type HistoryEnvelope = { version: 1; entries: MemorySearchHistoryEntry[] };
 
 export function createMemorySearchHistory(storage: StorageLike) {

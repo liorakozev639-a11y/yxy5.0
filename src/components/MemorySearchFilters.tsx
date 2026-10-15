@@ -1,3 +1,4 @@
+import type { FormEvent } from 'react';
 import type { MemorySearchCriteria, SearchCatalog } from '../domain/memory-search';
 
 export function MemorySearchFilters({ value, catalog, onChange }: {
@@ -5,6 +6,16 @@ export function MemorySearchFilters({ value, catalog, onChange }: {
   catalog: SearchCatalog;
   onChange(value: MemorySearchCriteria): void;
 }) {
+  function submitKeyword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const input = event.currentTarget.elements.namedItem('keyword') as HTMLInputElement | null;
+    const keyword = input?.value ?? '';
+    const keywords = addSearchKeyword(value.keywords, keyword);
+    if (keywords === value.keywords) return;
+    onChange({ ...value, keywords });
+    event.currentTarget.reset();
+  }
+
   return (
     <section className="memory-search-filters" aria-label="高级筛选">
       <header>
@@ -30,8 +41,19 @@ export function MemorySearchFilters({ value, catalog, onChange }: {
         {catalog.topics.map((topic) => <Choice key={topic.id} selected={value.topicIds?.includes(topic.id) ?? false} onClick={() => onChange({ ...value, topicIds: toggle(value.topicIds, topic.id) })}>{topic.name}</Choice>)}
       </FilterGroup>
 
+      <fieldset className="memory-search-filter-group memory-search-keywords">
+        <legend>关键词（全部都要匹配）</legend>
+        <form className="memory-search-keyword-form" onSubmit={submitKeyword}>
+          <input aria-label="添加关键词" name="keyword" maxLength={100} placeholder="例如：海边" />
+          <button className="secondary-button" type="submit" disabled={(value.keywords?.length ?? 0) >= 5}>添加</button>
+        </form>
+        <div className="memory-search-keyword-list">
+          {(value.keywords ?? []).map((item) => <button type="button" key={item} aria-label={`删除关键词：${item}`} onClick={() => onChange({ ...value, keywords: removeSearchKeyword(value.keywords, item) })}>{item}<span aria-hidden="true">×</span></button>)}
+        </div>
+      </fieldset>
+
       <label className="memory-search-sort">排序方式
-        <select value={value.sort ?? 'NEWEST'} onChange={(event) => onChange({ ...value, sort: event.target.value as MemorySearchCriteria['sort'] })}>
+        <select value={value.sort ?? (value.keywords?.length ? 'RELEVANCE' : 'NEWEST')} onChange={(event) => onChange({ ...value, sort: event.target.value as MemorySearchCriteria['sort'] })}>
           <option value="RELEVANCE">最相关</option>
           <option value="NEWEST">时间从新到旧</option>
           <option value="OLDEST">时间从旧到新</option>
@@ -39,6 +61,18 @@ export function MemorySearchFilters({ value, catalog, onChange }: {
       </label>
     </section>
   );
+}
+
+export function addSearchKeyword(values: string[] | undefined, value: string) {
+  const current = values ?? [];
+  const keyword = value.trim();
+  if (!keyword || current.includes(keyword) || current.length >= 5) return current;
+  if (current.reduce((total, item) => total + item.length, 0) + keyword.length > 100) return current;
+  return [...current, keyword];
+}
+
+export function removeSearchKeyword(values: string[] | undefined, value: string) {
+  return (values ?? []).filter((item) => item !== value);
 }
 
 function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {

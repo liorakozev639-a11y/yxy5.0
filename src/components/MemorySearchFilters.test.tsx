@@ -1,7 +1,7 @@
 import type { ReactElement, ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import { MemorySearchFilters } from './MemorySearchFilters';
+import { addSearchKeyword, MemorySearchFilters, removeSearchKeyword } from './MemorySearchFilters';
 
 const catalog = {
   moods: ['开心', '平静'],
@@ -39,6 +39,23 @@ describe('MemorySearchFilters', () => {
 
     expect(onChange).toHaveBeenNthCalledWith(1, expect.objectContaining({ from: '2026-09-30T16:00:00.000Z' }));
     expect(onChange).toHaveBeenNthCalledWith(2, expect.objectContaining({ to: '2026-10-01T16:00:00.000Z' }));
+  });
+
+  it('lets people add and remove independent search keywords', () => {
+    expect(addSearchKeyword(['海边'], ' 日落 ')).toEqual(['海边', '日落']);
+    expect(addSearchKeyword(['海边', '日落'], '海边')).toEqual(['海边', '日落']);
+    expect(removeSearchKeyword(['海边', '日落'], '海边')).toEqual(['日落']);
+
+    const html = renderToStaticMarkup(<MemorySearchFilters value={{ keywords: ['海边'] }} catalog={catalog} onChange={() => undefined} />);
+    expect(html).toContain('关键词（全部都要匹配）');
+    expect(html).toContain('删除关键词：海边');
+  });
+
+  it('shows the same implicit sort that the request layer will use', () => {
+    const keywordHtml = renderToStaticMarkup(<MemorySearchFilters value={{ keywords: ['海边'] }} catalog={catalog} onChange={() => undefined} />);
+    const browseHtml = renderToStaticMarkup(<MemorySearchFilters value={{}} catalog={catalog} onChange={() => undefined} />);
+    expect(keywordHtml).toContain('<option value="RELEVANCE" selected="">最相关</option>');
+    expect(browseHtml).toContain('<option value="NEWEST" selected="">时间从新到旧</option>');
   });
 });
 

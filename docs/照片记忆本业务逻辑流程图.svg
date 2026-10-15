@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1680" height="1340" viewBox="0 0 1680 1340">
 <rect width="1680" height="1340" fill="#f7f4ee"/>
 <text x="60" y="82" font-family="Microsoft YaHei, sans-serif" font-size="42" font-weight="700" text-anchor="start" fill="#253c37">照片记忆本业务逻辑</text>
-<text x="60" y="124" font-family="Microsoft YaHei, sans-serif" font-size="23" font-weight="400" text-anchor="start" fill="#65776f">当前网页 MVP · 先存照片，再补文字，通过主题、回声和情绪电影回看经历</text>
+<text x="60" y="124" font-family="Microsoft YaHei, sans-serif" font-size="23" font-weight="400" text-anchor="start" fill="#65776f">当前网页 MVP · 先存照片，再补文字，通过寻迹、主题、回声和情绪电影回看经历</text>
 <rect x="45" y="160" width="1590" height="220" rx="16" fill="#eaf3ef" stroke="#d8e2db"/>
 <text x="70" y="203" font-family="Microsoft YaHei, sans-serif" font-size="26" font-weight="700" text-anchor="start" fill="#253c37">01 记录与主题授权</text>
 <rect x="70" y="236" width="290" height="108" rx="16" fill="white" stroke="#d8e2db"/>
@@ -36,17 +36,17 @@
 <rect x="1125" y="455" width="510" height="600" rx="16" fill="#f0edf6" stroke="#d8e2db"/>
 <text x="1150" y="506" font-family="Microsoft YaHei, sans-serif" font-size="28" font-weight="700" text-anchor="start" fill="#253c37">04 情绪电影</text>
 <rect x="70" y="535" width="460" height="105" rx="16" fill="white" stroke="#d8e2db"/>
-<text x="300.0" y="576" font-family="Microsoft YaHei, sans-serif" font-size="24" font-weight="700" text-anchor="middle" fill="#253c37">照片墙与搜索</text>
-<text x="300.0" y="607" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="400" text-anchor="middle" fill="#65776f">按标题、文字、主题查找</text>
+<text x="300.0" y="576" font-family="Microsoft YaHei, sans-serif" font-size="24" font-weight="700" text-anchor="middle" fill="#253c37">首页快捷寻迹</text>
+<text x="300.0" y="607" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="400" text-anchor="middle" fill="#65776f">点击入口进入独立页面</text>
 <rect x="70" y="660" width="460" height="105" rx="16" fill="white" stroke="#d8e2db"/>
-<text x="300.0" y="701" font-family="Microsoft YaHei, sans-serif" font-size="24" font-weight="700" text-anchor="middle" fill="#253c37">发生时间线</text>
-<text x="300.0" y="732" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="400" text-anchor="middle" fill="#65776f">按日期分组打开记忆</text>
+<text x="300.0" y="701" font-family="Microsoft YaHei, sans-serif" font-size="24" font-weight="700" text-anchor="middle" fill="#253c37">记忆寻迹</text>
+<text x="300.0" y="732" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="400" text-anchor="middle" fill="#65776f">日期 ／ 心情 ／ 状态 ／ 主题 ／ 关键词</text>
 <rect x="70" y="785" width="460" height="105" rx="16" fill="white" stroke="#d8e2db"/>
-<text x="300.0" y="826" font-family="Microsoft YaHei, sans-serif" font-size="24" font-weight="700" text-anchor="middle" fill="#253c37">我的长期副本</text>
-<text x="300.0" y="857" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="400" text-anchor="middle" fill="#65776f">主题持续积累 ／ 自动收集开关</text>
+<text x="300.0" y="826" font-family="Microsoft YaHei, sans-serif" font-size="24" font-weight="700" text-anchor="middle" fill="#253c37">叙事时间轴</text>
+<text x="300.0" y="857" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="400" text-anchor="middle" fill="#65776f">首次 5 条 ／ 滚动加载 ／ 最近 20 条</text>
 <rect x="70" y="910" width="460" height="105" rx="16" fill="white" stroke="#d8e2db"/>
-<text x="300.0" y="951" font-family="Microsoft YaHei, sans-serif" font-size="24" font-weight="700" text-anchor="middle" fill="#253c37">重要日子</text>
-<text x="300.0" y="982" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="400" text-anchor="middle" fill="#65776f">日期差与已有记忆关联</text>
+<text x="300.0" y="951" font-family="Microsoft YaHei, sans-serif" font-size="24" font-weight="700" text-anchor="middle" fill="#253c37">长期副本与重要日子</text>
+<text x="300.0" y="982" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="400" text-anchor="middle" fill="#65776f">主题持续积累 ／ 日期关联</text>
 <rect x="610" y="535" width="460" height="105" rx="16" fill="white" stroke="#d8e2db"/>
 <text x="840.0" y="576" font-family="Microsoft YaHei, sans-serif" font-size="24" font-weight="700" text-anchor="middle" fill="#253c37">当天首次打开</text>
 <text x="840.0" y="607" font-family="Microsoft YaHei, sans-serif" font-size="19" font-weight="400" text-anchor="middle" fill="#65776f">按设置筛选旧记忆</text>

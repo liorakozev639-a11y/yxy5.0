@@ -218,7 +218,7 @@ def add_cover(doc, title, subtitle, version):
     p2.paragraph_format.space_after = Pt(42)
     meta = add_table(doc, ["项目", "内容"], [
         ["文档版本", version],
-        ["更新日期", "2026年10月14日"],
+        ["更新日期", "2026年10月15日"],
         ["产品形态", "本地优先的网页版 MVP"],
         ["代码位置", r"D:\yxy5.0"],
         ["数据位置", r"D:\yxy5.0\data"],
@@ -281,15 +281,15 @@ def add_figure(doc, path: Path, caption: str, width=7.0):
 def build_prd():
     doc = Document()
     configure_document(doc)
-    add_cover(doc, "照片记忆本产品需求文档", "完整功能版  先有照片后补文字", "V4.1")
+    add_cover(doc, "照片记忆本产品需求文档", "完整功能版  先有照片后补文字", "V4.3")
     add_intro(
         doc,
-        "照片记忆本定位为本地优先的情感型记忆产品。用户先保存照片，再按需要补充标题、备忘录、心情、状态和主题；系统通过长期副本、记忆回声、月度年度总结，把零散照片转化为可以持续回看的个人记忆档案。",
-        "本版覆盖当前网页 MVP 的全部功能、情绪电影、数据安全能力和业务边界。默认使用本地模板生成总结；只有用户主动开启云端 AI 后，后端才会发送授权范围内的最小结构化内容。运行数据固定保存在 D 盘项目目录和本机 PostgreSQL。",
+        "照片记忆本定位为本地优先的情感型记忆产品。用户先保存照片，再按需要补充标题、备忘录、心情、状态和主题；系统通过记忆寻迹、长期副本、记忆回声、月度年度总结，把零散照片转化为可以主动寻找、持续回看的个人记忆档案。",
+        "本版覆盖当前网页 MVP 的全部功能、记忆寻迹、情绪电影、数据安全能力和业务边界。默认使用本地模板生成总结；只有用户主动开启云端 AI 后，后端才会发送授权范围内的最小结构化内容。运行数据固定保存在 D 盘项目目录和本机 PostgreSQL。",
     )
     add_figure(doc, MOCKUP, "产品功能总览示意图", 7.0)
     add_contents(doc, [
-        "产品定位与目标", "目标人群与核心场景", "产品范围与信息架构", "照片记忆功能", "主题与长期副本", "记忆回声", "月度与年度总结", "数据保险箱与应用锁", "完整业务逻辑", "业务规则与异常处理", "非功能要求", "验收标准与预期效果", "版本边界与后续规划",
+        "产品定位与目标", "目标人群与核心场景", "产品范围与信息架构", "照片记忆功能", "记忆寻迹", "主题与长期副本", "记忆回声", "月度与年度总结", "数据保险箱与应用锁", "完整业务逻辑", "业务规则与异常处理", "非功能要求", "验收标准与预期效果", "版本边界与后续规划",
     ])
 
     doc.add_heading("1 产品定位与目标", level=1)
@@ -300,6 +300,7 @@ def build_prd():
         "降低记录门槛。图片和时间是唯一必需内容，其他字段都可后补。",
         "保留当时语境。标题、备忘录、心情、状态和主题共同描述一段记忆。",
         "形成长期叙事。考研、恋爱、读研等主题可以生成长期副本时间线。",
+        "支持主动寻找。用户可以用一句自然语言或明确筛选条件，从多年记录里找回某段经历。",
         "提供温和回看。系统每天最多展示三条记忆回声，并允许保存新的回声感言。",
         "让数据归用户控制。图片、数据库、导出、备份和恢复都清楚显示在本机 D 盘。",
     ])
@@ -332,8 +333,8 @@ def build_prd():
 
     doc.add_heading("3 产品范围与信息架构", level=1)
     add_table(doc, ["入口", "当前功能", "优先级"], [
-        ["记忆首页", "照片卡片  搜索  添加记忆  记忆回声  总结入口", "P0"],
-        ["时间线", "按事件日期分组浏览全部记忆", "P0"],
+        ["记忆首页", "照片卡片  寻迹快捷入口  添加记忆  记忆回声  总结入口", "P0"],
+        ["记忆寻迹", "自然语言解析  组合筛选  叙事时间轴  最近搜索", "P0"],
         ["长期副本", "创建  查看  自动收集  暂停  完成  归档", "P0"],
         ["重要日子", "创建纪念日并关联已有照片记忆", "P0"],
         ["记忆回声", "今日回声  三十天历史  感言  排除设置", "P0"],
@@ -370,16 +371,48 @@ def build_prd():
         "无论单张还是批量，字段未填写完整的照片都不进入待补充记忆列表。",
     ])
 
-    doc.add_heading("5 主题与长期副本", level=1)
-    doc.add_heading("5.1 主题规则", level=2)
+    doc.add_heading("5 记忆寻迹", level=1)
+    doc.add_paragraph("记忆寻迹是主动回看入口，替代原来只按日期浏览的独立时间线。首页提供明确的按钮入口；查询描述、条件确认、结果、编辑和翻页都在独立页面完成。")
+    doc.add_heading("5.1 查询输入与确认", level=2)
+    add_table(doc, ["条件", "识别与输入规则", "匹配规则"], [
+        ["日期", "支持今天、昨天、上周、上个月、今年、去年等明确表达，也可手动选择起止日期；首版不识别季节和模糊时间", "上海时区左闭右开区间；非法日期和反向区间不执行"],
+        ["心情", "自然语言或单选筛选", "精确匹配一个心情"],
+        ["状态", "自然语言或多选筛选", "必须同时包含全部所选状态"],
+        ["主题", "自然语言或多选筛选", "必须同时关联全部所选主题"],
+        ["关键词", "未识别文本先作为待确认关键词，空格分隔的文字拆成多个 AND 关键词；可新增或逐项删除", "标题或备忘录；默认精确包含，用户可主动开启模糊匹配"],
+    ], [1.05, 3.25, 2.55])
+    add_bullets(doc, [
+        "所有已确认条件按 AND 组合，不在用户不知情时扩大结果范围。",
+        "点击首页入口后进入独立页面；用户在页面内输入描述，解析结果以可移除标签展示，未知文本必须由用户确认后才查询。",
+        "最近二十条确认后的搜索条件仅保存在当前浏览器，可点击重用；不保存结果快照，不进入导出与数据库备份。",
+    ])
+    doc.add_heading("5.2 结果时间轴与空结果", level=2)
+    add_bullets(doc, [
+        "结果按上海时区的年月分组，卡片展示照片、时间、标题、心情、状态、主题和已关联长期副本。",
+        "首次固定加载五条；继续向下滚动自动加载下一页，并保留“继续加载”按钮作为可访问性兜底。",
+        "无关键词时默认按最新时间排序；带关键词时默认按相关度排序，也可切换最早时间或最新时间。相关度使用稳定分数、事件时间和 ID 排序。",
+        "进入独立页面且没有条件时自动加载全部记忆；从最近搜索复用条件时，已删除的心情、状态或主题会先被移除，并要求用户重新确认。",
+        "结果图片加载失败时切换到本地占位图并显示“照片暂时无法显示”，不会中断结果时间轴。",
+        "没有结果时最多给出三条逐项放宽建议。建议只描述将移除的一个条件，必须由用户点击后重新查询。",
+        "从结果打开详情可编辑或删除。保存后刷新当前已加载范围；删除后定位到最接近的仍存在结果。",
+    ])
+    doc.add_heading("5.3 边界与隐私", level=2)
+    add_bullets(doc, [
+        "离线时不伪造完整搜索结果；只提示需要连接本机后端，浏览器草稿仍可从原入口查看。",
+        "应用锁未解锁时不发起搜索请求，避免结果内容闪现。",
+        "模糊搜索仅在用户明确开启后使用，不执行语义推断、人物识别或自动改写查询。",
+    ])
+
+    doc.add_heading("6 主题与长期副本", level=1)
+    doc.add_heading("6.1 主题规则", level=2)
     doc.add_paragraph("主题是记忆与长期副本之间唯一的自动关联条件。状态和心情只描述当日语境，不参与副本收集。主题“无”不触发长期副本询问。")
-    doc.add_heading("5.2 首次授权", level=2)
+    doc.add_heading("6.2 首次授权", level=2)
     add_table(doc, ["用户选择", "本次结果", "以后同主题"], [
         ["同意加入", "创建或启用长期副本，并加入当前记忆", "直接自动收集，不再询问"],
         ["暂不加入", "保存当前记忆，不改变副本设置", "下次继续询问"],
         ["以后不再询问", "保存当前记忆并关闭该主题提示", "不再弹出授权提示"],
     ], [1.45, 3.15, 2.05])
-    doc.add_heading("5.3 长期副本状态", level=2)
+    doc.add_heading("6.3 长期副本状态", level=2)
     add_table(doc, ["状态", "含义", "自动收集"], [
         ["进行中", "副本持续积累", "用户开关决定"],
         ["暂停", "临时停止收集", "关闭"],
@@ -387,7 +420,7 @@ def build_prd():
         ["已归档", "从主要列表收起但保留数据", "关闭"],
     ], [1.2, 3.7, 1.75])
 
-    doc.add_heading("6 记忆回声", level=1)
+    doc.add_heading("7 记忆回声", level=1)
     doc.add_paragraph("记忆回声是情感型产品的首要主动回看能力。系统在用户当天首次打开首页时生成，最多三条，历史记录保留最近三十天。回声只使用本机已有记忆，不调用外部生成服务。")
     add_table(doc, ["候选类型", "触发依据", "用户操作"], [
         ["那年今日", "同月同日的旧记忆", "打开原记忆  再看一次  忽略"],
@@ -402,9 +435,9 @@ def build_prd():
         "记忆不足时展示真实空态，不虚构过去发生的内容。",
     ])
 
-    doc.add_heading("7 月度与年度总结", level=1)
+    doc.add_heading("8 月度与年度总结", level=1)
     doc.add_paragraph("月度与年度总结统一命名为“情绪电影”。它从首页提醒卡片和独立档案馆进入，以类似年度回顾的沉浸式翻页形式，用第二人称帮助用户回看自己经历过的阶段。")
-    doc.add_heading("7.1 生成与提醒", level=2)
+    doc.add_heading("8.1 生成与提醒", level=2)
     add_bullets(doc, [
         "用户首次确认总结授权后，文字和照片默认参与；两者都可以单独关闭，云端 AI 默认关闭。",
         "每月第一天起，用户当天首次打开首页时检查上个月；新年首次打开时同时检查上一年。",
@@ -412,7 +445,7 @@ def build_prd():
         "未读总结在首页显示“已经生成，可以前往查看”；关闭提醒不删除总结，之后仍可从档案馆进入。",
         "生成结果保存在 PostgreSQL；阅读进度自动保存，再次打开从上次页面继续。",
     ])
-    doc.add_heading("7.2 故事结构", level=2)
+    doc.add_heading("8.2 故事结构", level=2)
     add_table(doc, ["类型", "正常结构", "精简结构"], [
         ["月度", "6 至 7 页：封面、概览、情绪开场、代表记忆、可选长期副本、收束、感言", "仅 1 至 2 条记忆时生成 4 页"],
         ["年度", "11 至 12 页：封面、概览、季节、可选长期副本、情绪、代表记忆、原话、日常、收束、感言", "仅 1 至 2 条记忆时生成 4 页"],
@@ -424,7 +457,7 @@ def build_prd():
         "所有数字、主题、心情、状态、照片和原话必须来自冻结快照；不得补写用户没有记录的事实。",
         "当前版本不加入背景音乐，也不加入双人共同空间或双人叙事。",
     ])
-    doc.add_heading("7.3 回看与编辑", level=2)
+    doc.add_heading("8.3 回看与编辑", level=2)
     add_table(doc, ["能力", "业务规则"], [
         ["沉浸播放", "全屏逐页浏览，窄屏自适应；系统减少动态效果设置开启时关闭非必要动画"],
         ["档案馆", "按月度或年度筛选，打开已生成总结并恢复观看；删除接口已实现，当前界面尚未提供删除按钮"],
@@ -432,18 +465,18 @@ def build_prd():
         ["重新生成", "重新读取当前记忆和授权设置，覆盖旧页面；非空周期保留感言，空周期删除旧总结及其感言"],
         ["回声感言", "看完后可写一段总结感言并选择封面照片，作为独立记录保留"],
     ], [1.45, 5.5])
-    doc.add_heading("7.4 AI 与隐私", level=2)
+    doc.add_heading("8.4 AI 与隐私", level=2)
     add_bullets(doc, [
         "本地模板始终可用；缺少 AI 配置、网络超时、接口失败或输出校验不通过时自动回退本地模板。",
         "只有用户主动开启云端 AI，后端才发送授权范围内的最小结构化快照；本地路径、数据库连接和密钥永不发送。",
         "AI 仅改写第二人称旁白。后端校验页数、顺序、已知事实引用和阿拉伯数字；自然语言语义校验仍有边界，默认使用本地模板。",
         "单条记忆“不参与总结”和授权偏好更新已有 API；独立设置界面尚待补齐。被排除和已删除记忆不会进入新快照。",
     ])
-    doc.add_heading("7.5 情绪电影完整业务流程", level=2)
+    doc.add_heading("8.5 情绪电影完整业务流程", level=2)
     add_figure(doc, SUMMARY_FLOW, "月度年度总结从授权到生成和回看的实际流程", 6.25)
 
-    doc.add_heading("8 数据保险箱与应用锁", level=1)
-    doc.add_heading("8.1 数据保险箱", level=2)
+    doc.add_heading("9 数据保险箱与应用锁", level=1)
+    doc.add_heading("9.1 数据保险箱", level=2)
     add_table(doc, ["能力", "产品行为", "输出位置"], [
         ["JSON 导出", "输出版本化结构数据和关系", r"D:\yxy5.0\data\exports"],
         ["ZIP 导出", "输出 data json 原图 manifest 哈希和缺图警告", r"D:\yxy5.0\data\exports"],
@@ -452,7 +485,7 @@ def build_prd():
         ["数据库备份", "调用 pg dump 生成 custom 格式并记录大小与 SHA 256", r"D:\yxy5.0\data\backups"],
         ["存储透明度", "显示照片 备份 导出 临时目录及占用空间", r"D:\yxy5.0\data"],
     ], [1.4, 3.85, 1.7])
-    doc.add_heading("8.2 应用锁", level=2)
+    doc.add_heading("9.2 应用锁", level=2)
     add_bullets(doc, [
         "首次进入时提示设置应用锁，也允许暂不设置。",
         "密码长度至少八位，仅保存 scrypt 加盐摘要；恢复密钥只显示一次。",
@@ -460,13 +493,13 @@ def build_prd():
         "敏感导出、恢复、备份、关闭应用锁和修改锁定时间前需要在五分钟内再次验证。",
         "支持立即锁定、修改密码、暂停保护、用原密码重新开启和恢复密钥重设。",
     ])
-    doc.add_heading("8.3 当前数据边界", level=2)
+    doc.add_heading("9.3 当前数据边界", level=2)
     doc.add_paragraph("服务器 JSON 和 ZIP 导出覆盖照片、记忆、主题、长期副本、记忆回声、回声感言和回声偏好。新增情绪电影快照、故事页、总结感言与总结偏好尚未纳入 JSON 和 ZIP 迁移包；它们会随完整 PostgreSQL 原生数据库备份保存。重要日子及自定义心情和状态的候选列表仍在浏览器 IndexedDB 或 localStorage；已经用于记忆的心情和状态随记忆导出。原生数据库备份不包含原图文件，应同时保存照片 ZIP。")
 
-    doc.add_heading("9 完整业务逻辑", level=1)
+    doc.add_heading("10 完整业务逻辑", level=1)
     add_figure(doc, FLOW, "照片记忆本完整业务逻辑流程图", 7.0)
 
-    doc.add_heading("10 业务规则与异常处理", level=1)
+    doc.add_heading("11 业务规则与异常处理", level=1)
     add_table(doc, ["情况", "处理规则"], [
         ["上传成功但记忆保存失败", "显示明确错误；媒体清理或重试由后端负责，禁止伪装成功"],
         ["主题创建失败", "不保留仅在前端存在的伪主题，提示检查后端"],
@@ -478,21 +511,23 @@ def build_prd():
         ["应用锁会话失效", "业务 API 返回 401，前端切换到锁屏，保留尚未发送的表单输入"],
         ["云端 AI 不可用", "不阻断总结生成，校验失败或请求异常时立即使用本地模板"],
         ["总结版本冲突", "返回 409，前端提示刷新，禁止旧版本覆盖较新的旁白或页面顺序"],
+        ["寻迹文本存在未知部分", "先显示待确认关键词，不自动执行可能错误的查询"],
+        ["寻迹请求被新查询取代", "忽略旧请求的迟到响应，只呈现最新查询结果"],
     ], [2.0, 4.95])
 
-    doc.add_heading("11 非功能要求", level=1)
+    doc.add_heading("12 非功能要求", level=1)
     add_table(doc, ["类别", "要求"], [
         ["隐私", "默认本地模板；仅经授权向云端 AI 发送最小快照；不记录明文密码；数据库连接信息仅返回脱敏用户名"],
         ["安全", "业务 API 受服务器 Guard 保护；ZIP 导入在写入前完成路径 哈希 关系和大小校验"],
         ["可靠性", "数据库写入使用事务；导出和备份先写临时文件再原子移动"],
         ["可恢复性", "恢复前自动生成 JSON 安全快照；重复导入不复制相同记录"],
-        ["性能", "记忆接口游标分页；首页前端自动拉取分页；批量导入顺序执行"],
+        ["性能", "记忆寻迹固定每页五条并使用稳定游标；标题备忘录和状态字段具备 PostgreSQL 搜索索引"],
         ["兼容性", "当前面向 Windows 本机 Chrome Edge 和 Codex 内置浏览器"],
         ["可访问性", "表单具备可读标签，按钮可键盘聚焦，文档图片带替代说明"],
     ], [1.35, 5.6])
 
     doc.add_page_break()
-    doc.add_heading("12 验收标准与预期效果", level=1)
+    doc.add_heading("13 验收标准与预期效果", level=1)
     add_table(doc, ["编号", "验收标准", "当前结果"], [
         ["A01", "单张和批量图片可保存，编辑标题后列表即时更新", "已实现"],
         ["A02", "新建主题能立即用于长期副本，授权后同主题自动收集", "已实现"],
@@ -503,17 +538,18 @@ def build_prd():
         ["A07", "pg dump 备份成功并记录大小与 SHA 256", "已实现并真实验收"],
         ["A08", "应用锁从前端和 API 两层阻止未授权访问", "已实现并自动测试"],
         ["A09", "代码与运行数据只在 D 盘项目及指定数据目录", "已验证"],
+        ["A10", "记忆寻迹支持条件确认、AND 查询、稳定分页、最近二十条、放宽建议及详情编辑删除回流", "已实现并自动测试"],
     ], [0.7, 4.65, 1.6])
-    doc.add_paragraph("本次发布前验证基线为前端 38 个测试文件共 100 项通过，后端 33 个测试文件共 136 项通过；前后端生产构建通过，Prisma schema 有效，6 个数据库迁移全部应用。最终交付前会再次执行全量验证。")
+    doc.add_paragraph("本次发布前验证基线为前端 47 个测试文件共 161 项通过，后端 37 个测试文件共 163 项通过；前后端生产构建通过，Prisma schema 有效，7 个数据库迁移全部应用。10,000 条事务内临时数据实测后已回滚。最终交付前会再次执行全量验证。")
 
-    doc.add_heading("13 版本边界与后续规划", level=1)
+    doc.add_page_break()
+    doc.add_heading("14 版本边界与后续规划", level=1)
     add_bullets(doc, [
         "当前为单用户本地版，不包含账号体系、多人共享、评论和社交关系。",
         "不提供云同步、跨设备自动同步、地图轨迹、视频处理或面部识别。",
         "总结默认使用确定性统计和本地模板；云端 AI 只在用户授权且服务端完成配置时用于改写旁白。",
         "当前不提供背景音乐，不提供双人共同空间、双人年度回顾或共同编辑。",
-        "下一优先级是把重要日子和自定义候选列表迁移到 PostgreSQL，并纳入统一导出。",
-        "后续可增加应用启动时的自动备份策略、备份保留周期和恢复演练提醒。",
+        "下一优先级是把重要日子和自定义候选列表迁移到 PostgreSQL 并纳入统一导出，同时增加自动备份策略、保留周期和恢复演练提醒。",
     ])
 
     doc.save(PRD)
@@ -522,15 +558,15 @@ def build_prd():
 def build_tech():
     doc = Document()
     configure_document(doc)
-    add_cover(doc, "照片记忆本前后端技术方案", "本地优先网页 MVP  完整实现版", "V4.1")
+    add_cover(doc, "照片记忆本前后端技术方案", "本地优先网页 MVP  完整实现版", "V4.3")
     add_intro(
         doc,
-        "系统采用 React TypeScript Vite 前端、NestJS Prisma 后端和本机 PostgreSQL。图片作为文件保存在 D 盘，结构化数据保存在 PostgreSQL；情绪电影以冻结快照、本地模板和可选云端 AI 构建，应用锁与数据保险箱保护本地数据。",
+        "系统采用 React TypeScript Vite 前端、NestJS Prisma 后端和本机 PostgreSQL。图片作为文件保存在 D 盘，结构化数据保存在 PostgreSQL；记忆寻迹以本地解析、参数化 SQL、稳定游标和 PostgreSQL 索引实现，情绪电影以冻结快照、本地模板和可选云端 AI 构建，应用锁与数据保险箱保护本地数据。",
         "本文档描述当前代码的模块边界、数据模型、API、核心时序、安全控制、部署方式和验证结果。所有路径均以 D:\\yxy5.0 为项目根目录。",
     )
     add_figure(doc, FLOW, "产品业务流程与技术边界", 7.0)
     add_contents(doc, [
-        "方案目标与技术栈", "总体架构", "前端方案", "后端方案", "数据模型", "API 设计", "核心业务时序", "记忆回声与总结算法", "数据保险箱", "应用锁与安全", "存储与部署", "测试与质量保证", "已知边界与演进方案",
+        "方案目标与技术栈", "总体架构", "前端方案", "后端方案", "数据模型", "API 设计", "核心业务时序", "记忆寻迹、回声与总结算法", "数据保险箱", "应用锁与安全", "存储与部署", "测试与质量保证", "已知边界与演进方案",
     ])
 
     doc.add_heading("1 方案目标与技术栈", level=1)
@@ -539,7 +575,7 @@ def build_tech():
         ["前端测试", "Vitest  React DOM Server  fake indexeddb", "领域 组件 Repository 与本地存储测试"],
         ["后端", "NestJS  TypeScript", "REST API 模块 注入 校验和全局 Guard"],
         ["数据访问", "Prisma 6", "PostgreSQL 模型 事务 查询和迁移"],
-        ["数据库", "PostgreSQL 18  localhost 5433", "记忆 主题 副本 回声 会话和备份记录"],
+        ["数据库", "PostgreSQL 18  localhost 5432", "记忆 主题 副本 回声 会话 搜索索引和备份记录"],
         ["文件处理", "Multer  AdmZip  Archiver  PDFKit", "图片上传 ZIP 校验与打包 中文 PDF"],
         ["安全", "Node crypto scrypt SHA 256", "密码摘要 会话令牌摘要 文件校验"],
         ["备份", "pg dump", "PostgreSQL custom 格式数据库备份"],
@@ -548,14 +584,14 @@ def build_tech():
     add_bullets(doc, [
         "前端地址为 http://127.0.0.1:5173，Vite 将 /api 代理到后端。",
         "后端仅绑定 127.0.0.1:3001，CORS 只允许可信本机来源。",
-        "数据库连接通过 server/.env 的 DATABASE_URL 提供，当前端口为 5433。",
+        "数据库连接通过 server/.env 的 DATABASE_URL 提供；本机已验证的实际端口为 5432。",
         "运行数据根目录固定为 D:\\yxy5.0\\data。",
     ])
 
     doc.add_heading("2 总体架构", level=1)
     doc.add_paragraph("浏览器只通过 Repository 层调用 REST API。NestJS Controller 负责 DTO 和会话边界，Service 负责业务事务，Prisma 访问 PostgreSQL。图片原文件不进入数据库；MediaAsset 保存相对存储路径和元数据。")
     add_table(doc, ["组件", "责任", "依赖"], [
-        ["React 页面", "渲染首页 时间线 副本 回声 总结 保险箱", "领域对象与 Repository"],
+        ["React 页面", "渲染首页 记忆寻迹 副本 回声 总结 保险箱", "领域对象与 Repository"],
         ["ApiClient", "超时 JSON 错误 Cookie 和 401 锁屏事件", "fetch"],
         ["NestJS Controller", "路由 DTO 文件上传 响应 Cookie", "Service"],
         ["Service", "授权 排行 事务 导出 恢复 备份", "Prisma 文件系统 crypto"],
@@ -566,7 +602,8 @@ def build_tech():
     doc.add_heading("3 前端方案", level=1)
     doc.add_heading("3.1 页面与组件", level=2)
     add_table(doc, ["模块", "主要组件", "关键状态"], [
-        ["记忆", "HomeView MemoryCard MemoryDetail MemoryForm BatchImportDialog", "列表 查询 编辑器 批量队列"],
+        ["记忆", "HomeView MemoryCard MemoryDetail MemoryForm BatchImportDialog", "列表 编辑器 批量队列"],
+        ["记忆寻迹", "MemorySearchPage Input Filters Confirmation Timeline", "草稿条件 已确认查询 分页游标 最近历史"],
         ["长期副本", "LongTermCopiesView LongTermCopyTimeline LongTermCopyDecisionDialog", "副本列表 当前副本 授权决策"],
         ["重要日子", "ImportantDaysView", "IndexedDB 重要日子及关联记忆"],
         ["记忆回声", "MemoryEchoCard MemoryEchoPage EchoReflectionEditor EchoSettingsPanel", "今日回声 历史 感言 偏好"],
@@ -576,14 +613,14 @@ def build_tech():
     doc.add_heading("3.2 状态管理", level=2)
     add_bullets(doc, [
         "记忆列表使用 useReducer 管理加载 新增批量 更新 删除 选择和回声排除状态。",
-        "主题 长期副本 重要日子 回声和应用锁使用页面级状态；useMemorySummaries 用 reducer 管理总结授权、提醒、档案、播放、编辑和感言状态机。",
+        "主题 长期副本 重要日子 回声和应用锁使用页面级状态；useMemorySearch 用 reducer 管理草稿、确认、请求代次、稳定分页和编辑删除回流；useMemorySummaries 管理总结状态机。",
         "ApiClient 默认 credentials include，使 HttpOnly 会话 Cookie 自动随请求发送。",
         "任何业务 API 返回 401 时，ApiClient 派发 photo memory lock required 事件；App 重新读取锁状态并显示 AppLockGate。",
         "应用锁未解锁前不触发记忆 主题 副本和回声请求，避免页面内容闪现。",
     ])
     doc.add_heading("3.3 Repository 边界", level=2)
     add_table(doc, ["Repository", "职责"], [
-        ["ApiMemoryRepository", "上传媒体 记忆增删改查 自动拉取分页"],
+        ["ApiMemoryRepository", "上传媒体 记忆增删改查 自动拉取分页和 POST 搜索"],
         ["ApiTopicRepository", "主题列表 创建 更新提示策略与回声设置"],
         ["ApiLongTermCopyRepository", "副本 CRUD 回填 时间线和自动收集开关"],
         ["ApiMemoryEchoRepository", "今日回声 历史 感言 偏好与排除"],
@@ -595,7 +632,7 @@ def build_tech():
     doc.add_heading("4 后端方案", level=1)
     add_table(doc, ["NestJS 模块", "责任", "关键实现"], [
         ["MediaModule", "图片上传 下载 删除", "MIME 与签名校验 20 MB 上限 受控路径"],
-        ["MemoriesModule", "记忆 CRUD 分页和关联重建", "Prisma 事务 主题校验 副本自动收集"],
+        ["MemoriesModule", "记忆 CRUD 分页 搜索和关联重建", "Prisma 事务 参数化搜索 主题校验 副本自动收集"],
         ["TopicsModule", "主题和提示设置", "同用户名称唯一"],
         ["LongTermCopiesModule", "副本生命周期 回填和时间线", "同用户同主题唯一"],
         ["EchoesModule", "生成每日回声 感言和偏好", "确定性评分 每日唯一 最多三条"],
@@ -622,6 +659,7 @@ def build_tech():
         ["AppSession", "tokenHash expiresAt verifiedUntil", "令牌摘要唯一"],
         ["BackupRecord", "status storagePath fileSize checksum", "记录 pg dump 结果"],
         ["ImportRecord", "sourceType status storagePath summary errorMessage", "记录预检和恢复结果"],
+        ["搜索索引", "lower title  lower note  statuses", "pg_trgm GIN 与数组 GIN；搜索历史不进入数据库"],
     ], [1.55, 3.2, 2.1])
 
     doc.add_heading("6 API 设计", level=1)
@@ -629,6 +667,7 @@ def build_tech():
         ["健康", "GET /api/health", "公开健康检查"],
         ["媒体", "POST /api/media  GET DELETE /api/media id", "上传 获取和删除图片"],
         ["记忆", "POST GET /api/memories  GET PATCH DELETE /api/memories id", "记忆 CRUD 与游标分页"],
+        ["记忆寻迹", "POST /api/memories/search", "固定五条一页；AND 条件、精确或明确开启的模糊匹配、稳定游标和放宽建议"],
         ["主题", "GET POST /api/topics  PATCH DELETE /api/topics id", "主题 CRUD 与策略"],
         ["长期副本", "GET POST /api/long-term-copies  GET PATCH DELETE id", "副本 CRUD"],
         ["副本扩展", "POST id/backfill  GET id/timeline", "历史回填和时间线"],
@@ -667,15 +706,33 @@ def build_tech():
         "每项记录成功或失败；重试只处理失败项。",
     ])
 
-    doc.add_heading("8 记忆回声与总结算法", level=1)
-    doc.add_heading("8.1 回声生成", level=2)
+    doc.add_heading("7.3 记忆寻迹", level=2)
+    add_numbered(doc, [
+        "首页按钮进入独立寻迹页面；用户输入描述后，前端纯函数按上海时区解析日期短语、心情、状态、主题和未知关键词。",
+        "用户确认解析标签、手动筛选和是否开启模糊匹配后，useMemorySearch 产生新的请求代次并提交 POST /api/memories/search。",
+        "MemorySearchService 归一化输入，MemorySearchQuery 使用 Prisma.sql 参数绑定构造 AND 条件、评分、排序和游标，禁止字符串拼接 SQL。",
+        "接口只返回五条、总数、下一游标及最多三条放宽建议；前端按上海时区月份组成叙事时间轴。",
+        "IntersectionObserver 到达哨兵时继续加载；请求代次保证迟到响应不会覆盖新查询。编辑后重新加载已显示范围，删除后选择最近锚点。",
+        "确认后的条件写入 localStorage 最近二十条；仅保存查询条件，不保存结果、照片或敏感文本快照。",
+    ])
+
+    doc.add_heading("8 记忆寻迹、回声与总结算法", level=1)
+    doc.add_heading("8.1 记忆寻迹查询", level=2)
+    add_bullets(doc, [
+        "日期使用 from 大于等于、to 小于的左闭右开区间，避免跨日和毫秒边界遗漏。",
+        "心情精确相等；statuses 使用数组包含运算；每个 topicId 使用 EXISTS 子查询，确保全部主题都成立。",
+        "精确关键词对 lower title 与 lower note 使用转义后的 LIKE；模糊模式使用 pg_trgm similarity，阈值为 0.25。",
+        "相关度排序以标题权重 2、备忘录权重 1 累加；游标包含 score、eventAt 与 id，保证并列结果稳定。",
+        "数据库迁移建立标题和备忘录 trigram GIN、状态数组 GIN；10,000 条临时数据基准后整笔回滚。",
+    ])
+    doc.add_heading("8.2 回声生成", level=2)
     add_bullets(doc, [
         "以 Asia Shanghai 的自然日作为 echoDate。每个用户每天只有一条 EchoGeneration。",
         "候选包括那年今日 副本周年 副本里程碑 副本第一条 过去与现在和主题记忆。",
         "过滤软删除 排除记忆 禁用主题 禁用心情和最近展示记录。",
         "评分后使用确定性顺序取前三条，并通过数据库唯一约束处理并发。",
     ])
-    doc.add_heading("8.2 情绪电影快照与故事计划", level=2)
+    doc.add_heading("8.3 情绪电影快照与故事计划", level=2)
     add_bullets(doc, [
         "MONTH 使用当月第一天到下一月第一天，YEAR 使用当年第一天到下一年第一天，统一按 Asia Shanghai 切分。",
         "SummarySnapshotService 只读取未删除且未排除的记忆，根据 allowText 和 allowPhotos 裁剪字段，并计算 SHA 256 sourceHash。",
@@ -683,7 +740,7 @@ def build_tech():
         "最高频心情按次数、最近出现时间和中文名称稳定排序；无心情时从鼓励文案池稳定选取并避开最近三次。",
         "代表记忆按内容完整度和日期去重评分，长期副本只展示周期内确实有关联记忆的进展。",
     ])
-    doc.add_heading("8.3 旁白生成、校验与回退", level=2)
+    doc.add_heading("8.4 旁白生成、校验与回退", level=2)
     add_numbered(doc, [
         "SummaryTemplateService 先为每一页生成可直接使用的第二人称本地旁白。",
         "仅当 SummaryPreference 已确认且 allowCloudAi 为 true 时，SummaryAiAdapter 才发送裁剪后的结构化快照。",
@@ -692,7 +749,7 @@ def build_tech():
         "保存时从 API 响应递归移除 sourceSnapshot 与 storagePath；密钥只存在服务端环境变量。",
     ])
     doc.add_page_break()
-    doc.add_heading("8.4 情绪电影业务与持久化流程", level=2)
+    doc.add_heading("8.5 情绪电影业务与持久化流程", level=2)
     add_figure(doc, SUMMARY_FLOW, "现有总结生命周期与前端回看路径", 6.25)
 
     doc.add_heading("9 数据保险箱", level=1)
@@ -736,7 +793,7 @@ def build_tech():
     ], [3.05, 2.55, 1.25])
     doc.add_heading("11.1 启动顺序", level=2)
     add_numbered(doc, [
-        "确认 PostgreSQL 在 localhost 5433 接受连接。",
+        "确认 PostgreSQL 在 localhost 5432 接受连接，并让 server/.env 的 DATABASE_URL 使用同一端口。",
         "在 D:\\yxy5.0\\server 执行 npx prisma migrate deploy。",
         "在 D:\\yxy5.0\\server 执行 npm run dev，后端监听 3001。",
         "在 D:\\yxy5.0 执行 npm run dev，前端监听 5173。",
@@ -754,11 +811,12 @@ def build_tech():
 
     doc.add_heading("12 测试与质量保证", level=1)
     add_table(doc, ["验证项", "结果"], [
-        ["前端测试", "38 个测试文件 100 项通过（功能完成时基线）"],
-        ["后端测试", "33 个测试文件 136 项通过（功能完成时基线）"],
+        ["前端测试", "47 个测试文件 161 项通过（功能完成时基线）"],
+        ["后端测试", "37 个测试文件 163 项通过（功能完成时基线）"],
         ["生产构建", "前端和后端均通过"],
-        ["Prisma", "schema valid，6 个 migration 全部已应用"],
-        ["真实数据库", "PostgreSQL localhost 5433 可用"],
+        ["Prisma", "schema valid，7 个 migration 全部已应用"],
+        ["真实数据库", "PostgreSQL localhost 5432 可用；记忆寻迹迁移已应用"],
+        ["搜索基准", "10,000 条事务内临时记忆：精确约 0.09 ms，组合约 3.94 ms，模糊约 36.19 ms；已回滚"],
         ["真实导出", "JSON 10 KB  ZIP 1.1 MB  PDF 1.2 MB，均有效"],
         ["真实备份", "pg dump 38 KB，状态 COMPLETED，SHA 256 已记录"],
         ["浏览器冒烟", "首页 保险箱 存储路径和应用锁表单正常，控制台无错误"],
@@ -773,6 +831,7 @@ def build_tech():
         "ZIP Slip、绝对路径、压缩炸弹、坏哈希、关系损坏和重复导入。",
         "应用锁密码摘要、失败限流、过期会话、Cookie 属性和业务 API 门禁。",
         "pg dump 参数数组、路径含空格、成功失败记录和连接串脱敏。",
+        "自然语言解析、未知词确认、LIKE 转义、AND 组合、稳定游标、无结果放宽建议、请求竞态和滚动加载。",
     ])
 
     doc.add_heading("13 已知边界与演进方案", level=1)
@@ -786,13 +845,14 @@ def build_tech():
         ["本机 Cookie secure false", "只适用于 HTTP localhost", "部署 HTTPS 时启用 Secure"],
         ["云端 AI 为可选外部依赖", "启用时会发送已授权的最小结构化内容", "保持默认关闭并在设置中明确服务提供方"],
         ["当前无背景音乐和双人模式", "情绪电影专注个人图文回看", "仅在用户价值验证后再单独设计，不与当前范围混入"],
+        ["最近搜索只在当前浏览器", "清理浏览器数据后历史消失，也不会跨设备同步", "保持本地隐私边界；仅在用户明确需要时再设计加密同步"],
     ], [2.1, 2.2, 2.55])
 
     doc.save(TECH)
 
 
 FILE_DESCRIPTIONS = {
-    "src/App.tsx": "前端总编排器。创建各 Repository，加载记忆、主题、副本和应用锁，并把首页、时间线、长期副本、回声、情绪电影与保险箱串成单页应用。",
+    "src/App.tsx": "前端总编排器。创建各 Repository，加载记忆、主题、副本和应用锁，并把首页、记忆寻迹、长期副本、回声、情绪电影与保险箱串成单页应用。",
     "src/main.tsx": "React 启动入口，把 App 挂载到 DOM，并载入全局样式。",
     "src/app-state.ts": "记忆列表 reducer；统一处理初始化、批量新增、编辑、删除、选中和回声排除，避免页面状态分散。",
     "src/api/client.ts": "REST 基础客户端。统一 JSON、超时、Cookie、错误消息和 401 锁屏事件，所有 API Repository 复用。",
@@ -802,13 +862,18 @@ FILE_DESCRIPTIONS = {
     "src/components/DataVaultPage.tsx": "数据保险箱页面。展示存储位置，组织导出、导入预检/恢复、数据库备份和敏感操作再验证。",
     "src/components/EchoReflectionEditor.tsx": "回声感言编辑器，把用户新的感受保存为独立感言而不改写原记忆。",
     "src/components/EchoSettingsPanel.tsx": "记忆回声设置面板，控制总开关及心情、主题和单条记忆排除。",
-    "src/components/HomeView.tsx": "记忆首页布局，组合照片墙、搜索、添加入口、回声卡片和情绪电影提醒卡片。",
+    "src/components/HomeView.tsx": "记忆首页布局，组合照片墙、记忆寻迹快捷入口、添加入口、回声卡片和情绪电影提醒卡片。",
+    "src/components/MemorySearchInput.tsx": "记忆寻迹自然语言输入和最近二十条历史入口；提交后进入条件确认。",
+    "src/components/MemorySearchFilters.tsx": "日期、心情、状态、主题、关键词和排序筛选；关键词最多五个，可新增和逐项删除，所有条件由用户可见控制。",
+    "src/components/MemorySearchConfirmation.tsx": "把解析出的条件和待确认关键词显示为可移除标签，阻止未知文本被静默解释。",
+    "src/components/MemorySearchTimeline.tsx": "按上海时区月份渲染寻迹结果、缺图占位、关联副本与滚动加载哨兵。",
+    "src/components/MemorySearchPage.tsx": "记忆寻迹独立页面；无条件时自动浏览全部记忆，组合输入、确认、失效历史条件清理、筛选、结果、空态建议和加载状态。",
     "src/components/ImportantDaysView.tsx": "重要日子列表和编辑界面，计算纪念日距离并关联已有记忆。",
     "src/components/LongTermCopiesView.tsx": "长期副本总览；展示创建、生命周期、自动收集和进入时间线的操作。",
     "src/components/LongTermCopyDecisionDialog.tsx": "主题首次授权弹窗，支持加入、暂不加入和以后不再询问。",
     "src/components/LongTermCopyForm.tsx": "长期副本创建/编辑表单，选择唯一关联主题并维护名称、日期和状态。",
     "src/components/LongTermCopyTimeline.tsx": "按事件时间稳定排列副本内照片、标题和备忘录。",
-    "src/components/MemoryCard.tsx": "照片墙单卡片，展示缩略图、标题、时间与主题，并触发详情。",
+    "src/components/MemoryCard.tsx": "照片墙单卡片，展示缩略图、标题、时间与主题，图片加载失败时切换占位图，并触发详情。",
     "src/components/MemoryDetail.tsx": "记忆详情，展示完整图文、标签与回声感言，并提供编辑和删除入口；尚未接入总结排除开关。",
     "src/components/MemoryEchoCard.tsx": "首页回声卡片，呈现单条回声理由、照片和查看/忽略/写感言动作。",
     "src/components/MemoryEchoPage.tsx": "独立回声页面，浏览今日和最近三十天历史并进入设置。",
@@ -823,8 +888,12 @@ FILE_DESCRIPTIONS = {
     "src/components/SummaryStoryPlayer.tsx": "全屏逐页播放器，处理上一页/下一页、关闭、继续阅读、已读和进入编辑/感言。",
     "src/components/Toast.tsx": "轻量全局反馈条，用于显示成功、失败和需要用户注意的短消息。",
     "src/hooks/use-memory-summaries.ts": "情绪电影前端状态机。负责首次检查、授权、提醒、档案加载、播放进度队列、页面编辑、重新生成、感言和删除。",
+    "src/hooks/use-memory-search.ts": "记忆寻迹请求编排。管理请求代次、固定五条分页、继续加载、刷新已加载范围及编辑删除后的锚点。",
     "src/domain/memory-summary.ts": "情绪电影领域类型与守卫；定义周期、状态、页面、偏好、感言及 READY 判断。",
     "src/domain/memory.ts": "照片记忆核心模型与 MemoryDraft 类型，包含图文、时间、标签、主题以及回声和总结排除字段。",
+    "src/domain/memory-search.ts": "记忆寻迹查询类型、条件归一化和前端精确匹配规则。",
+    "src/domain/memory-query-parser.ts": "按上海时区解析明确日期短语、心情、状态、主题和待确认关键词；拒绝非法日期、反向区间与超过上限的输入。",
+    "src/domain/memory-search-state.ts": "搜索 reducer 与竞态保护；只接受当前请求代次的成功或失败响应。",
     "src/domain/memory-echo.ts": "记忆回声、感言和偏好领域模型。",
     "src/domain/memory-echo-state.ts": "回声列表状态更新辅助函数，处理忽略、感言替换与异步详情感言是否仍属于当前记忆的判断。",
     "src/domain/long-term-copy-policy.ts": "主题与长期副本授权决策规则，区分本次加入、继续询问和永久不询问。",
@@ -834,7 +903,7 @@ FILE_DESCRIPTIONS = {
     "src/domain/data-vault.ts": "导出、导入、备份、存储状态和应用锁的前端类型。",
     "src/domain/options.ts": "默认心情、状态和主题候选项。",
     "src/domain/topic.ts": "主题模型及提示、回声相关设置。",
-    "src/repositories/api-memory-repository.ts": "封装媒体上传和记忆 CRUD；自动遍历游标分页并把后端 DTO 转成前端模型。",
+    "src/repositories/api-memory-repository.ts": "封装媒体上传、记忆 CRUD 与寻迹 API；自动遍历普通分页并把后端 DTO 转成前端模型。",
     "src/repositories/api-topic-repository.ts": "封装主题列表、创建及提示策略更新。",
     "src/repositories/api-long-term-copy-repository.ts": "封装长期副本 CRUD、回填、时间线与自动收集开关。",
     "src/repositories/api-memory-echo-repository.ts": "封装今日回声、三十天历史、感言、忽略及回声偏好接口。",
@@ -843,6 +912,7 @@ FILE_DESCRIPTIONS = {
     "src/repositories/api-app-lock-repository.ts": "封装应用锁设置、解锁、验证、立即锁定、改密、恢复和开关。",
     "src/storage/db.ts": "IndexedDB 适配层，保存仍属浏览器侧的草稿与重要日子，并提供升级和兼容读取。",
     "src/storage/image-metadata.ts": "读取图片 EXIF 拍摄时间；无时间信息时回退本机当前时间。",
+    "src/storage/memory-search-history.ts": "把确认后的最近二十条搜索条件保存在 localStorage；容错解析损坏数据并按最新使用顺序去重。",
     "server/src/main.ts": "NestJS 启动入口；配置本机监听、全局前缀、DTO 校验、Cookie/CORS 和端口。",
     "server/src/app.module.ts": "后端根模块，装配 Prisma、媒体、记忆、主题、长期副本、回声、总结、保险箱和应用锁。",
     "server/src/health.controller.ts": "公开健康检查，用于确认后端进程可访问。",
@@ -853,6 +923,10 @@ FILE_DESCRIPTIONS = {
     "server/src/prisma/prisma.module.ts": "导出全局 PrismaService，供业务模块注入。",
     "server/src/media/media.service.ts": "验证 MIME 与文件签名、20MB 限制、受控路径写入/读取/删除和上传补偿清理。",
     "server/src/memories/memories.service.ts": "记忆事务核心；写入字段和主题关系，自动收集长期副本，处理软删除、分页及单条总结排除。",
+    "server/src/memories/memory-search.types.ts": "服务端搜索输入、结果、放宽建议和内部行类型，约束固定页面大小与排序模式。",
+    "server/src/memories/memory-search-cursor.ts": "对包含相关度、事件时间和 ID 的稳定游标进行编码、校验与解码。",
+    "server/src/memories/memory-search-query.ts": "使用 Prisma.sql 参数绑定构造日期、心情、状态、全部主题、关键词、评分、排序和游标 SQL。",
+    "server/src/memories/memory-search.service.ts": "执行精确或模糊查询、批量加载完整记忆、保持排序并生成最多三条单条件放宽建议。",
     "server/src/topics/topics.service.ts": "主题 CRUD 与同名约束，保存长期副本提示和回声开关。",
     "server/src/long-term-copies/long-term-copies.service.ts": "长期副本创建、状态流转、历史回填、自动收集和稳定分页时间线。",
     "server/src/echoes/echo-ranking.ts": "回声候选评分与确定性排序纯函数。",
@@ -886,6 +960,7 @@ FILE_DESCRIPTIONS = {
     "server/prisma/migrations/0004_echo_generation_source_topic/migration.sql": "补充回声生成批次与来源主题，保证每日幂等和可追踪。",
     "server/prisma/migrations/0005_vault_lock_summary/migration.sql": "新增数据保险箱、应用锁和旧版总结相关结构。",
     "server/prisma/migrations/0006_emotional_memory_summaries/migration.sql": "新增情绪电影、故事页面、总结感言、隐私偏好和单条记忆排除字段。",
+    "server/prisma/migrations/0007_memory_search_indexes/migration.sql": "启用 pg_trgm，并建立标题、备忘录 trigram GIN 与状态数组 GIN 索引。",
     "tools/generate_final_docs.py": "从当前代码事实生成 PRD、前后端技术方案和本代码模块说明三份 Word 文档。",
     "tools/build_prd_v2.py": "早期 PRD 生成脚本，保留用于追溯旧版文档。",
     "tools/build_backend_doc.py": "早期后端方案文档生成脚本。",
@@ -1002,7 +1077,7 @@ def code_description(relative: str) -> str:
 def build_code_map():
     doc = Document()
     configure_document(doc)
-    add_cover(doc, "照片记忆本代码模块说明", "逐文件功能分类与实现索引", "V1.1")
+    add_cover(doc, "照片记忆本代码模块说明", "逐文件功能分类与实现索引", "V1.3")
     add_intro(
         doc,
         "代码按“前端交互与状态—Repository—NestJS Controller/Service—Prisma/PostgreSQL—D 盘文件系统”分层。情绪电影在既有架构上新增独立领域、前端状态机和后端快照生成链路，没有绕过应用锁或数据边界。",
@@ -1069,6 +1144,7 @@ def build_code_map():
     add_bullets(doc, [
         "新增用户功能时，先补领域规则和失败测试，再接 Repository、Service、Controller 和组件，避免把业务判断堆进页面。",
         "修改 Prisma schema 时必须新增 migration，禁止只运行 db push；生产前执行 migrate deploy。",
+        "修改记忆寻迹时，需要同步校验自然语言解析、条件确认、前后端 DTO、参数化 SQL、游标顺序、最近搜索和空结果建议。",
         "情绪电影新增页面类型时，需要同步更新故事类型、计划、模板、AI 校验、前端渲染和端到端测试。",
         "任何导出、导入、备份或 AI 改动都要复核应用锁、路径限制、敏感字段裁剪和失败回退。",
         "交付前固定执行前端测试与构建、后端测试与构建、Prisma validate，以及 Word 文档逐页渲染检查。",
